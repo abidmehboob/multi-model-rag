@@ -1,0 +1,2664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>RAG Assistant Mobile</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Prism.js for code syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+
+        .mobile-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            position: relative;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+            background: #f8f9fa;
+            position: relative;
+        }
+
+        .messages {
+            padding: 20px 15px 100px 15px;
+            min-height: 100%;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .message.assistant {
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            position: relative;
+        }
+
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.assistant .message-bubble {
+            background: white;
+            color: #2c3e50;
+            border: 1px solid #e9ecef;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .message-info {
+            font-size: 0.7rem;
+            margin-top: 8px;
+            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .model-badge {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.6rem;
+            font-weight: 600;
+        }
+
+        .sources {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f8ff;
+            border-radius: 10px;
+            border-left: 3px solid #007bff;
+        }
+
+        .sources-title {
+            font-weight: 600;
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            color: #007bff;
+        }
+
+        .source-item {
+            background: white;
+            padding: 6px 10px;
+            margin: 3px 0;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            border: 1px solid #e3f2fd;
+        }
+
+        .source-detail {
+            background: white;
+            border: 1px solid #e3f2fd;
+            border-radius: 8px;
+            margin: 5px 0;
+            overflow: hidden;
+        }
+
+        .source-header {
+            padding: 8px 12px;
+            background: #f8f9fa;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .source-content {
+            padding: 10px 12px;
+            border-top: 1px solid #e3f2fd;
+            font-family: 'Courier New', monospace;
+            font-size: 0.7rem;
+            line-height: 1.3;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            background: #f8f9fa;
+            display: none;
+        }
+
+        .source-content.expanded {
+            display: block;
+        }
+
+        .expand-icon {
+            transition: transform 0.2s;
+            color: #007bff;
+        }
+
+        .expand-icon.rotated {
+            transform: rotate(90deg);
+        }
+
+        .source-meta {
+            font-size: 0.7rem;
+            color: #6c757d;
+            margin-top: 2px;
+        }
+
+        .input-area {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px;
+            border-top: 1px solid #e9ecef;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .input-container {
+            display: flex;
+            align-items: end;
+            gap: 10px;
+            max-width: 100%;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 20px;
+            border: 1px solid #e9ecef;
+            position: relative;
+            min-height: 40px;
+            max-height: 120px;
+            display: flex;
+            align-items: center;
+        }
+
+        #questionInput {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 12px 16px;
+            font-size: 1rem;
+            outline: none;
+            resize: none;
+            min-height: 40px;
+            max-height: 120px;
+            line-height: 1.4;
+            font-family: inherit;
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 0.3;
+            }
+            100% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Mobile code formatting styles */
+        .message-bubble pre {
+            background: #2d3748;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            overflow-x: auto;
+            position: relative;
+            font-size: 12px;
+        }
+
+        .message-bubble pre code {
+            color: #e2e8f0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .message-bubble code:not(pre code) {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 11px;
+            color: #e53e3e;
+        }
+
+        .code-header {
+            background: #1a202c;
+            color: #a0aec0;
+            padding: 6px 12px;
+            border-radius: 6px 6px 0 0;
+            font-size: 11px;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .copy-code-btn {
+            background: #4a5568;
+            color: white;
+            border: none;
+            padding: 3px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            transition: background 0.2s;
+            touch-action: manipulation;
+        }
+
+        .copy-code-btn:hover,
+        .copy-code-btn:active {
+            background: #2d3748;
+        }
+
+        .copy-code-btn.copied {
+            background: #38a169;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+
+        .typing-indicator {
+            display: none;
+        }
+
+        .typing-indicator.show {
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .typing-bubble {
+            background: white;
+            border: 1px solid #e9ecef;
+            padding: 12px 16px;
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: relative;
+            min-width: 60px;
+        }
+
+        .typing-dots {
+            display: flex;
+            align-items: center;
+            height: 20px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            margin: 0 3px;
+            animation: typingDots 1.4s ease-in-out infinite both;
+        }
+
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typingDots {
+            0%, 80%, 100% {
+                opacity: 0.3;
+                transform: scale(0.8);
+            }
+            40% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ccc;
+            animation: typing 1.4s infinite;
+        }
+
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        .side-menu {
+            position: fixed;
+            top: 0;
+            right: -300px;
+            width: 300px;
+            height: 100vh;
+            background: white;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            transition: right 0.3s ease;
+            z-index: 200;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .side-menu.open {
+            right: 0;
+        }
+
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 150;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .menu-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .close-menu {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        .menu-section {
+            margin-bottom: 30px;
+        }
+
+        .menu-section h3 {
+            color: #2c3e50;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #667eea;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .model-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .model-item {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .model-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+
+        .model-desc {
+            color: #6c757d;
+            font-size: 0.8rem;
+            margin-top: 2px;
+        }
+
+        .clear-btn {
+            width: 100%;
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        /* Mobile Custom Types Styles */
+        .mobile-custom-types {
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+
+        .mobile-custom-type-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mobile-custom-type-info {
+            flex-grow: 1;
+        }
+
+        .mobile-custom-type-name {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 4px;
+        }
+
+        .mobile-custom-type-meta {
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+
+        .mobile-delete-type-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .mobile-add-type-btn {
+            width: 100%;
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        /* Mobile Modal Styles */
+        .mobile-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .mobile-modal-content {
+            background-color: white;
+            margin: 10% auto;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            animation: slideInUp 0.3s ease-out;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .mobile-modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mobile-close {
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+        }
+
+        .mobile-form-group {
+            margin: 15px 20px;
+        }
+
+        .mobile-form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .mobile-form-group input,
+        .mobile-form-group select,
+        .mobile-form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        .mobile-form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .mobile-form-actions {
+            padding: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .mobile-btn-cancel,
+        .mobile-btn-submit {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .mobile-btn-cancel {
+            background: #6c757d;
+            color: white;
+        }
+
+        .mobile-btn-submit {
+            background: #28a745;
+            color: white;
+        }
+
+        @keyframes slideInUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translate(-50%, 20px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        @keyframes slideDown {
+            from { transform: translate(-50%, 0); opacity: 1; }
+            to { transform: translate(-50%, 20px); opacity: 0; }
+        }
+
+        .upload-section {
+            margin-bottom: 30px;
+        }
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 30px 20px;
+            text-align: center;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:active, .upload-area.drag-over {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .upload-area.uploading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-status {
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        .upload-success {
+            color: #28a745;
+        }
+
+        .upload-error {
+            color: #dc3545;
+        }
+
+        .document-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .doc-stat {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+        }
+
+        .welcome-message i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .welcome-message h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        /* Mobile Enhanced Add Type Modal Styles */
+        .mobile-model-suggestions {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .mobile-suggestion-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .mobile-suggestion-tag {
+            background: #007bff;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            display: inline-block;
+            min-width: 44px; /* Touch-friendly minimum size */
+            text-align: center;
+        }
+
+        .mobile-suggestion-tag:active {
+            background: #0056b3;
+            transform: scale(0.95);
+        }
+
+        .mobile-model-help {
+            color: #6c757d;
+            font-size: 0.75rem;
+            line-height: 1.3;
+        }
+
+        .mobile-temperature-input {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 5px;
+        }
+
+        .mobile-temperature-input input[type="range"] {
+            flex: 1;
+            height: 8px;
+            background: #ddd;
+            border-radius: 4px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .mobile-temperature-input input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: #007bff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .mobile-temperature-input input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: #007bff;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .mobile-temperature-input span {
+            font-weight: bold;
+            color: #007bff;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .mobile-temperature-guide {
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .mobile-keywords-help {
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 5px;
+            display: block;
+        }
+
+        /* iOS safe area handling */
+        @supports (padding: max(0px)) {
+            .header {
+                padding-top: max(15px, env(safe-area-inset-top));
+            }
+            
+            .input-area {
+                padding-bottom: max(15px, env(safe-area-inset-bottom));
+            }
+        }
+
+        /* Multi-model functionality styles */
+        .multi-model-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .multi-toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: #ccc;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .multi-toggle-switch.active {
+            background: #667eea;
+        }
+
+        .multi-toggle-knob {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .multi-toggle-switch.active .multi-toggle-knob {
+            transform: translateX(20px);
+        }
+
+        .model-selector {
+            display: none;
+            margin-bottom: 15px;
+            animation: slideInUp 0.3s ease-out;
+        }
+
+        .model-selector.active {
+            display: block;
+        }
+
+        .model-selector-header {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .model-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .model-option {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 20px;
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.8rem;
+            min-width: fit-content;
+        }
+
+        .model-option.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .model-option:active {
+            transform: scale(0.95);
+        }
+
+        .multi-model-info {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 0.8rem;
+            color: #1565c0;
+        }
+
+        .multi-response {
+            background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+            border: 2px solid #e3f2fd;
+            border-radius: 15px;
+            margin: 15px 0;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+            overflow: hidden;
+        }
+
+        .multi-response-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 16px;
+            margin: 0;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .multi-response-content {
+            padding: 16px;
+            background: white;
+        }
+
+        .individual-model-response {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            margin: 12px 0;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            animation: slideInFromRight 0.5s ease-out;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .individual-model-response:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .individual-model-response.combined-response {
+            border: 2px solid #28a745;
+            background: linear-gradient(135deg, #f8fff9 0%, #ffffff 100%);
+            box-shadow: 0 4px 16px rgba(40, 167, 69, 0.15);
+            margin: 8px 0;
+        }
+
+        .individual-model-response.combined-response .model-response-header {
+            background: linear-gradient(45deg, #28a745, #20c997) !important;
+        }
+
+        .individual-model-response.combined-response:nth-child(odd) {
+            border-left: 4px solid #007bff;
+        }
+
+        .individual-model-response.combined-response:nth-child(even) {
+            border-left: 4px solid #6f42c1;
+        }
+
+        .model-wise-separator {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(40, 167, 69, 0.3), transparent);
+            margin: 10px 0;
+        }
+
+        .model-separator {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #667eea, transparent);
+            margin: 20px 0;
+            border-radius: 2px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 20px 0 15px 0;
+            padding: 10px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section-header.combined {
+            color: #28a745;
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(32, 201, 151, 0.1));
+            border-left-color: #28a745;
+        }
+
+        @keyframes slideInFromRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .model-response-header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .model-response-body {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .model-badge {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .model-type-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+        }
+
+        .multi-model-summary {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            border: 1px solid #bbdefb;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: fadeInUp 0.4s ease-out;
+        }
+
+        .summary-icon {
+            width: 24px;
+            height: 24px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+        }
+
+        .summary-text {
+            flex: 1;
+            font-size: 0.8rem;
+            color: #1565c0;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-container">
+        <div class="header">
+            <div class="header-left">
+                <i class="fas fa-robot"></i>
+                <h1>RAG Assistant</h1>
+                <div class="status-indicator" id="statusIndicator"></div>
+            </div>
+            <button class="menu-btn" onclick="toggleMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+
+        <div class="chat-area">
+            <div class="messages" id="messages">
+                <div class="welcome-message">
+                    <i class="fas fa-robot"></i>
+                    <h3>Welcome to RAG Assistant!</h3>
+                    <p>Ask me any question and I'll use the most appropriate AI model to help you.</p>
+                    <div style="margin-top: 20px; padding: 15px; background: rgba(102, 126, 234, 0.1); border-radius: 12px; font-size: 0.85rem;">
+                        <div style="font-weight: bold; margin-bottom: 10px; color: #667eea;">
+                            🚀 Multi-Model Intelligence
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <strong>💡 Auto-Parsing:</strong> "Technical: How do engines work? Creative: Write a car story"
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <strong>🎯 Manual Mode:</strong> Toggle Multi-Model and select specific AI models
+                        </div>
+                        <div style="color: #6c757d; font-size: 0.75rem; margin-top: 10px;">
+                            Each model brings unique strengths - technical precision, creative flair, or general knowledge
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="typing-bubble">
+                    <div class="typing-dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-container">
+                <!-- Multi-model toggle -->
+                <div class="multi-model-toggle">
+                    <div class="multi-toggle-switch" onclick="toggleMultiModel()" id="multiToggle">
+                        <div class="multi-toggle-knob"></div>
+                    </div>
+                    <span>Multi-Model Query</span>
+                </div>
+                
+                <!-- Model selector (hidden by default) -->
+                <div class="model-selector" id="modelSelector">
+                    <div class="model-selector-header">Select Models:</div>
+                    <div class="multi-model-info">
+                        <i class="fas fa-info-circle"></i> Choose multiple AI models to get different perspectives on your question.
+                    </div>
+                    <div class="model-options" id="modelOptions">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="input-wrapper">
+                    <textarea id="questionInput" placeholder="Ask your question..." rows="1"></textarea>
+                </div>
+                <button class="send-btn" onclick="askQuestion()" id="sendBtn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Side Menu -->
+    <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
+    <div class="side-menu" id="sideMenu">
+        <div class="menu-header">
+            <h2>Menu</h2>
+            <button class="close-menu" onclick="toggleMenu()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="menu-section">
+            <h3><i class="fas fa-chart-line"></i> Statistics</h3>
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <span class="stat-value" id="questionCount">0</span>
+                    <div class="stat-label">Questions</div>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="documentCount">0</span>
+                    <div class="stat-label">Sources</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <h3><i class="fas fa-brain"></i> AI Models</h3>
+            <div class="model-list" id="modelList">
+                <!-- Models will be loaded here -->
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <button class="clear-btn" onclick="clearHistory()">
+                <i class="fas fa-trash"></i>
+                Clear Chat History
+            </button>
+        </div>
+
+        <div class="menu-section">
+            <h3><i class="fas fa-cogs"></i> Custom Types</h3>
+            <div id="mobileCustomTypesList" class="mobile-custom-types">
+                Loading...
+            </div>
+            <button class="mobile-add-type-btn" onclick="showMobileAddTypeModal()">
+                <i class="fas fa-plus"></i> Add Custom Type
+            </button>
+        </div>
+
+        <div class="menu-section">
+            <h3><i class="fas fa-upload"></i> Upload Documents</h3>
+            <div class="upload-area" onclick="document.getElementById('mobileFileInput').click()"
+                 ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event)">
+                <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; margin-bottom: 10px; color: #667eea;"></i>
+                <div style="font-weight: 600; margin-bottom: 5px;">Tap to Upload Files</div>
+                <div style="font-size: 0.8rem; color: #6c757d;">PDF, TXT files (Max 16MB)</div>
+            </div>
+            <input type="file" id="mobileFileInput" class="file-input" multiple accept=".pdf,.txt" onchange="handleMobileFiles(this.files)">
+            <div class="upload-status" id="mobileUploadStatus"></div>
+        </div>
+
+        <div class="menu-section">
+            <h3><i class="fas fa-database"></i> Documents</h3>
+            <div class="document-info" id="mobileDocumentInfo">
+                <div class="doc-stat">
+                    <span>Total Documents:</span>
+                    <span id="mobileDocCount">0</span>
+                </div>
+                <div class="doc-stat">
+                    <span>Sources:</span>
+                    <span id="mobileSourceCount">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let questionCount = 0;
+        let documentCount = 0;
+
+        function formatCodeBlocks(content) {
+            // Format code blocks with syntax highlighting
+            content = content.replace(/```(\w+)?\n([\s\S]*?)```/g, function(match, language, code) {
+                const lang = language || 'text';
+                const codeId = 'mobile-code-' + Math.random().toString(36).substr(2, 9);
+                
+                return `
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>${lang.toUpperCase()}</span>
+                            <button class="copy-code-btn" onclick="copyMobileCode('${codeId}')">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <pre><code id="${codeId}" class="language-${lang}">${escapeHtml(code.trim())}</code></pre>
+                    </div>
+                `;
+            });
+
+            // Format inline code
+            content = content.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            return content;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function copyMobileCode(codeId) {
+            const codeElement = document.getElementById(codeId);
+            const text = codeElement.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = codeElement.parentNode.parentNode.querySelector('.copy-code-btn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                btn.classList.add('copied');
+                
+                // Show feedback
+                showToast('Code copied to clipboard!');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy code: ', err);
+                showToast('Failed to copy code');
+            });
+        }
+
+        function showToast(message) {
+            // Simple toast notification for mobile
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 100px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0,0,0,0.8);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 12px;
+                z-index: 10000;
+                opacity: 0;
+                transition: opacity 0.3s;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // Fade in
+            setTimeout(() => toast.style.opacity = '1', 10);
+            
+            // Remove after 2 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 2000);
+        }
+        let isMenuOpen = false;
+
+        // Auto-resize textarea
+        const textarea = document.getElementById('questionInput');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // Enter key to send (on mobile, allow new lines with shift+enter)
+        textarea.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                askQuestion();
+            }
+        });
+
+        function toggleMenu() {
+            isMenuOpen = !isMenuOpen;
+            const menu = document.getElementById('sideMenu');
+            const overlay = document.getElementById('menuOverlay');
+            
+            if (isMenuOpen) {
+                menu.classList.add('open');
+                overlay.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            } else {
+                menu.classList.remove('open');
+                overlay.classList.remove('open');
+                document.body.style.overflow = '';
+            }
+        }
+
+        async function loadModels() {
+            try {
+                const response = await fetch('/api/models');
+                const data = await response.json();
+                
+                const modelList = document.getElementById('modelList');
+                modelList.innerHTML = '';
+                
+                Object.entries(data.models).forEach(([type, config]) => {
+                    const modelDiv = document.createElement('div');
+                    modelDiv.className = 'model-item';
+                    modelDiv.innerHTML = `
+                        <div class="model-name">${type}: ${config.model}</div>
+                        <div class="model-desc">${config.description}</div>
+                    `;
+                    modelList.appendChild(modelDiv);
+                });
+            } catch (error) {
+                console.error('Failed to load models:', error);
+            }
+        }
+
+        // Multi-model functionality
+        let isMultiModelMode = false;
+        let selectedModels = [];
+
+        function toggleMultiModel() {
+            const toggle = document.getElementById('multiToggle');
+            const selector = document.getElementById('modelSelector');
+            
+            isMultiModelMode = !isMultiModelMode;
+            
+            if (isMultiModelMode) {
+                toggle.classList.add('active');
+                selector.classList.add('active');
+                loadAvailableModelTypes();
+            } else {
+                toggle.classList.remove('active');
+                selector.classList.remove('active');
+                selectedModels = [];
+            }
+            
+            // Haptic feedback
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }
+
+        async function loadAvailableModelTypes() {
+            try {
+                const response = await fetch('/api/models');
+                const data = await response.json();
+                
+                const modelOptions = document.getElementById('modelOptions');
+                const allModels = { ...data.models };
+                
+                // Create model option buttons
+                modelOptions.innerHTML = Object.keys(allModels).map(modelType => `
+                    <div class="model-option" onclick="toggleModelSelection('${modelType}')" data-model="${modelType}">
+                        ${modelType.charAt(0).toUpperCase() + modelType.slice(1)}
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Failed to load model types:', error);
+                document.getElementById('modelOptions').innerHTML = 
+                    '<div style="color: #dc3545;">Error loading models</div>';
+            }
+        }
+
+        function toggleModelSelection(modelType) {
+            const option = document.querySelector(`[data-model="${modelType}"]`);
+            
+            if (selectedModels.includes(modelType)) {
+                selectedModels = selectedModels.filter(m => m !== modelType);
+                option.classList.remove('selected');
+            } else {
+                selectedModels.push(modelType);
+                option.classList.add('selected');
+            }
+            
+            // Haptic feedback
+            if (navigator.vibrate) {
+                navigator.vibrate(30);
+            }
+        }
+
+        async function askMultiModel(question) {
+            if (selectedModels.length === 0) {
+                addMessage('Please select at least one model for multi-model query.', 'assistant', { prompt_type: 'error' });
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/ask-multi', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        question: question,
+                        model_types: selectedModels
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Add multi-model response with special formatting
+                    addMessage(data.answer, 'assistant', {
+                        ...data,
+                        isMultiModel: true,
+                        selectedModels: selectedModels
+                    });
+                    
+                    // Update stats
+                    questionCount++;
+                    document.getElementById('questionCount').textContent = questionCount;
+                    
+                    if (data.sources && data.sources.length > 0) {
+                        documentCount += data.sources.length;
+                        document.getElementById('documentCount').textContent = documentCount;
+                    }
+                } else {
+                    addMessage(`Multi-Model Error: ${data.error}`, 'assistant', { prompt_type: 'error' });
+                }
+            } catch (error) {
+                addMessage(`Multi-Model Network Error: ${error.message}`, 'assistant', { prompt_type: 'error' });
+            }
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('questionInput');
+            const question = input.value.trim();
+            
+            if (!question) return;
+            
+            // Clear input
+            input.value = '';
+            input.style.height = 'auto';
+            
+            // Add user message
+            addMessage(question, 'user');
+            
+            // Check if multi-model mode is enabled
+            if (isMultiModelMode) {
+                showTyping(true, 'Processing with multiple AI models...');
+                await askMultiModel(question);
+                showTyping(false);
+                return;
+            }
+            
+            // Show typing indicator with dynamic messages
+            showTyping(true);
+            document.getElementById('sendBtn').disabled = true;
+            
+            // Add dynamic loading text to typing bubble
+            const typingBubble = document.querySelector('.typing-bubble');
+            const originalContent = typingBubble.innerHTML;
+            
+            const messages = [
+                'Analyzing your question...',
+                'Searching documents...',
+                'Selecting AI model...',
+                'Generating response...'
+            ];
+            
+            let messageIndex = 0;
+            const messageInterval = setInterval(() => {
+                if (messageIndex < messages.length) {
+                    typingBubble.innerHTML = `<div style="color: #666; font-size: 0.9em; margin-bottom: 8px;">${messages[messageIndex]}</div>${originalContent}`;
+                    messageIndex++;
+                }
+            }, 1000);
+            
+            try {
+                const response = await fetch('/api/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Add assistant response
+                    addMessage(data.answer, 'assistant', data);
+                    
+                    // Update stats
+                    questionCount++;
+                    document.getElementById('questionCount').textContent = questionCount;
+                    
+                    if (data.sources && data.sources.length > 0) {
+                        documentCount += data.sources.length;
+                        document.getElementById('documentCount').textContent = documentCount;
+                    }
+                } else {
+                    addMessage(`Error: ${data.error}`, 'assistant', { prompt_type: 'error' });
+                }
+            } catch (error) {
+                addMessage(`Network error: ${error.message}`, 'assistant', { prompt_type: 'error' });
+            } finally {
+                // Clear loading messages interval
+                clearInterval(messageInterval);
+                
+                // Restore original typing bubble content
+                const typingBubble = document.querySelector('.typing-bubble');
+                typingBubble.innerHTML = originalContent;
+                
+                showTyping(false);
+                document.getElementById('sendBtn').disabled = false;
+                input.focus();
+            }
+        }
+
+        function showTyping(show) {
+            const indicator = document.getElementById('typingIndicator');
+            if (show) {
+                indicator.classList.add('show');
+                scrollToBottom();
+            } else {
+                indicator.classList.remove('show');
+            }
+        }
+
+        function addMessage(content, sender, data = null) {
+            // Remove welcome message if it exists
+            const welcome = document.querySelector('.welcome-message');
+            if (welcome) {
+                welcome.remove();
+            }
+
+            const messages = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            // Format content with code highlighting if it's from assistant
+            let formattedContent = content;
+            if (sender === 'assistant') {
+                formattedContent = formatCodeBlocks(content);
+            }
+            
+            let messageHtml = `<div class="message-bubble">`;
+            
+            // Handle multi-model responses with enhanced display
+            if (data && sender === 'assistant' && (data.prompt_type === 'auto-parsed-multi' || data.prompt_type === 'auto-multi-fallback' || data.isMultiModel)) {
+                const isAutoParsed = data.prompt_type === 'auto-parsed-multi';
+                const isAutoFallback = data.prompt_type === 'auto-multi-fallback';
+                const modelCount = isAutoParsed ? data.parsed_sections?.length : 
+                                  isAutoFallback ? data.used_models?.length : data.selectedModels?.length;
+                
+                messageHtml += `
+                    <div class="multi-model-summary">
+                        <div class="summary-icon">
+                            <i class="fas fa-${isAutoFallback ? 'shield-alt' : 'brain'}"></i>
+                        </div>
+                        <div class="summary-text">
+                            <strong>${isAutoParsed ? 'Auto-Parsed' : isAutoFallback ? 'Auto-Fallback' : 'Manual'} Multi-Model Response</strong><br>
+                            ${isAutoFallback ? `🔍 No documents found - using ${modelCount} AI models for comprehensive coverage` : 
+                              `${modelCount} AI model${modelCount > 1 ? 's' : ''} provided ${modelCount > 1 ? 'their' : 'its'} perspective`}
+                        </div>
+                    </div>
+                `;
+
+                // Parse and display individual model responses
+                if (isAutoParsed && data.parsed_sections) {
+                    // For auto-parsed responses, extract individual responses
+                    const sections = data.parsed_sections;
+                    
+                    messageHtml += `
+                        <div class="section-header">
+                            <i class="fas fa-layer-group"></i>
+                            Individual Model Responses
+                        </div>
+                    `;
+                    
+                    sections.forEach((section, index) => {
+                        const modelIcon = getModelIcon(section.model_type);
+                        const modelName = section.model_type.charAt(0).toUpperCase() + section.model_type.slice(1);
+                        
+                        messageHtml += `
+                            <div class="individual-model-response" style="animation-delay: ${index * 0.1}s;">
+                                <div class="model-response-header">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="model-type-icon">${modelIcon}</div>
+                                        <span>${modelName} Model</span>
+                                    </div>
+                                    <div class="model-badge">${section.model_type}</div>
+                                </div>
+                                <div class="model-response-body">
+                                    <div style="font-size: 0.8rem; color: #666; margin-bottom: 8px; font-style: italic;">
+                                        📝 Question: "${section.question}"
+                                    </div>
+                                    <div>${section.answer ? formatCodeBlocks(section.answer) : 'Individual response integrated in combined answer below'}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    // Add separator
+                    messageHtml += `<div class="model-separator"></div>`;
+                    
+                    // Add combined response section
+                    messageHtml += `
+                        <div class="section-header combined">
+                            <i class="fas fa-puzzle-piece"></i>
+                            Model-wise Responses
+                        </div>
+                    `;
+                    
+                    // Try to parse individual model responses from the combined content
+                    const combinedResponses = parseModelResponses(formattedContent, sections.map(s => s.model_type));
+                    
+                    if (Object.keys(combinedResponses).length > 0) {
+                        // Display parsed individual responses
+                        sections.forEach((section, index) => {
+                            const modelIcon = getModelIcon(section.model_type);
+                            const modelName = section.model_type.charAt(0).toUpperCase() + section.model_type.slice(1);
+                            const modelResponse = combinedResponses[section.model_type] || section.answer;
+                            
+                            if (index > 0) {
+                                messageHtml += `<div class="model-wise-separator"></div>`;
+                            }
+                            
+                            messageHtml += `
+                                <div class="individual-model-response combined-response" style="animation-delay: ${(sections.length + index) * 0.1}s;">
+                                    <div class="model-response-header">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <div class="model-type-icon">${modelIcon}</div>
+                                            <span>${modelName} Response</span>
+                                        </div>
+                                        <div class="model-badge">${section.model_type}</div>
+                                    </div>
+                                    <div class="model-response-body">
+                                        <div style="font-size: 0.8rem; color: #666; margin-bottom: 8px; font-style: italic;">
+                                            📝 Question: "${section.question}"
+                                        </div>
+                                        <div>${modelResponse ? formatCodeBlocks(modelResponse) : 'Response processing...'}</div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        // Fallback: display the full combined response
+                        messageHtml += `
+                            <div class="individual-model-response combined-response">
+                                <div class="model-response-header">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="model-type-icon">🔮</div>
+                                        <span>Integrated Response</span>
+                                    </div>
+                                    <div class="model-badge">All Models</div>
+                                </div>
+                                <div class="model-response-body">
+                                    ${formattedContent}
+                                </div>
+                            </div>
+                        `;
+                    }
+                } else if (data.prompt_type === 'auto-multi-fallback' && data.multi_results) {
+                    // For auto-fallback multi-model, show the models used
+                    messageHtml += `
+                        <div class="section-header">
+                            <i class="fas fa-shield-alt"></i>
+                            Auto-Fallback Models Used
+                        </div>
+                    `;
+                    
+                    const results = data.multi_results;
+                    const successfulResults = results.filter(r => r.success);
+                    
+                    results.forEach((result, index) => {
+                        const modelIcon = getModelIcon(result.model_type);
+                        const modelName = result.model_type.charAt(0).toUpperCase() + result.model_type.slice(1);
+                        
+                        messageHtml += `
+                            <div class="individual-model-response" style="animation-delay: ${index * 0.1}s;">
+                                <div class="model-response-header">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="model-type-icon">${modelIcon}</div>
+                                        <span>${modelName} Model</span>
+                                    </div>
+                                    <div class="model-badge">${result.success ? 'success' : 'error'}</div>
+                                </div>
+                                <div class="model-response-body">
+                                    ${result.success ? 
+                                        `<div>${formatCodeBlocks(result.answer)}</div>` : 
+                                        `<div style="color: #dc3545; font-weight: 500;">❌ ${result.error}</div>`
+                                    }
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    // Add separator
+                    messageHtml += `<div class="model-separator"></div>`;
+                    
+                    messageHtml += `
+                        <div class="section-header combined">
+                            <i class="fas fa-puzzle-piece"></i>
+                            Comprehensive Fallback Response
+                        </div>
+                    `;
+                    
+                    // Display the combined response as a single integrated response
+                    messageHtml += `
+                        <div class="individual-model-response combined-response">
+                            <div class="model-response-header">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div class="model-type-icon">🔮</div>
+                                    <span>Combined AI Response</span>
+                                </div>
+                                <div class="model-badge">${successfulResults.length}/${results.length} models</div>
+                            </div>
+                            <div class="model-response-body">
+                                ${formattedContent}
+                            </div>
+                        </div>
+                    `;
+                } else if (data.isMultiModel && data.selectedModels) {
+                    // For manual multi-model, show the models used
+                    messageHtml += `
+                        <div class="section-header">
+                            <i class="fas fa-users"></i>
+                            Selected Models Contributing
+                        </div>
+                    `;
+                    
+                    // Try to parse individual responses from the combined content
+                    const individualResponses = parseIndividualResponses(formattedContent, data.selectedModels);
+                    const hasIndividualResponses = Object.keys(individualResponses).length > 0;
+                    
+                    data.selectedModels.forEach((modelType, index) => {
+                        const modelIcon = getModelIcon(modelType);
+                        const modelName = modelType.charAt(0).toUpperCase() + modelType.slice(1);
+                        const individualResponse = individualResponses[modelType];
+                        
+                        messageHtml += `
+                            <div class="individual-model-response" style="animation-delay: ${index * 0.1}s;">
+                                <div class="model-response-header">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="model-type-icon">${modelIcon}</div>
+                                        <span>${modelName} Model</span>
+                                    </div>
+                                    <div class="model-badge">${modelType}</div>
+                                </div>
+                                <div class="model-response-body">
+                                    ${individualResponse ? 
+                                        `<div>${formatCodeBlocks(individualResponse)}</div>` : 
+                                        '<div style="color: #28a745; font-weight: 500;">✅ This model contributed to the integrated response below</div>'
+                                    }
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    // Add separator
+                    messageHtml += `<div class="model-separator"></div>`;
+                    
+                    messageHtml += `
+                        <div class="section-header combined">
+                            <i class="fas fa-puzzle-piece"></i>
+                            ${hasIndividualResponses ? 'Model-wise Responses' : 'Integrated Response'}
+                        </div>
+                    `;
+                    
+                    if (hasIndividualResponses) {
+                        // Display individual model responses separately
+                        data.selectedModels.forEach((modelType, index) => {
+                            const modelIcon = getModelIcon(modelType);
+                            const modelName = modelType.charAt(0).toUpperCase() + modelType.slice(1);
+                            const modelResponse = individualResponses[modelType];
+                            
+                            if (index > 0) {
+                                messageHtml += `<div class="model-wise-separator"></div>`;
+                            }
+                            
+                            messageHtml += `
+                                <div class="individual-model-response combined-response" style="animation-delay: ${(data.selectedModels.length + index) * 0.1}s;">
+                                    <div class="model-response-header">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <div class="model-type-icon">${modelIcon}</div>
+                                            <span>${modelName} Response</span>
+                                        </div>
+                                        <div class="model-badge">${modelType}</div>
+                                    </div>
+                                    <div class="model-response-body">
+                                        <div>${formatCodeBlocks(modelResponse)}</div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        // Fallback: try to split the combined content by likely patterns
+                        const splitResponses = splitCombinedResponse(formattedContent, data.selectedModels);
+                        
+                        if (splitResponses.length > 1) {
+                            splitResponses.forEach((response, index) => {
+                                const modelType = data.selectedModels[index] || `model${index + 1}`;
+                                const modelIcon = getModelIcon(modelType);
+                                const modelName = modelType.charAt(0).toUpperCase() + modelType.slice(1);
+                                
+                                if (index > 0) {
+                                    messageHtml += `<div class="model-wise-separator"></div>`;
+                                }
+                                
+                                messageHtml += `
+                                    <div class="individual-model-response combined-response" style="animation-delay: ${index * 0.1}s;">
+                                        <div class="model-response-header">
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <div class="model-type-icon">${modelIcon}</div>
+                                                <span>${modelName} Response</span>
+                                            </div>
+                                            <div class="model-badge">${modelType}</div>
+                                        </div>
+                                        <div class="model-response-body">
+                                            <div>${formatCodeBlocks(response.trim())}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                        } else {
+                            // Show single integrated response
+                            messageHtml += `
+                                <div class="individual-model-response combined-response">
+                                    <div class="model-response-header">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <div class="model-type-icon">🔮</div>
+                                            <span>Integrated Response</span>
+                                        </div>
+                                        <div class="model-badge">All Models</div>
+                                    </div>
+                                    <div class="model-response-body">
+                                        ${formattedContent}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                }
+            } else {
+                // Regular single-model response
+                messageHtml += formattedContent;
+            }
+            
+            if (data && sender === 'assistant') {
+                // Add model info for single responses
+                if (!data.isMultiModel && !data.prompt_type?.includes('multi')) {
+                    messageHtml += `<div class="message-info">
+                        <span class="model-badge">${data.prompt_type || 'general'}</span>
+                        ${data.model_config ? data.model_config.model : ''}
+                        ${data.source_type === 'general_knowledge' ? '• General Knowledge' : '• Documents'}
+                    </div>`;
+                }
+                
+                if (data.sources && data.sources.length > 0) {
+                    messageHtml += '<div class="sources">';
+                    messageHtml += '<div class="sources-title">📚 Sources:</div>';
+                    data.sources.forEach((source, index) => {
+                        const sourceId = `mobile-source-${Date.now()}-${index}`;
+                        const sourceTitle = source.filename || source.topic || `Source ${index + 1}`;
+                        const modelType = source.model_type ? ` (${source.model_type})` : '';
+                        
+                        messageHtml += `
+                            <div class="source-detail">
+                                <div class="source-header" onclick="toggleMobileSource('${sourceId}')">
+                                    <div>
+                                        <div style="font-weight: 600;">${sourceTitle}${modelType}</div>
+                                        <div class="source-meta">Similarity: ${(source.score || 0).toFixed(3)}</div>
+                                    </div>
+                                    <i class="fas fa-chevron-right expand-icon" id="icon-${sourceId}"></i>
+                                </div>
+                                <div class="source-content" id="${sourceId}">
+${source.full_content || source.content_preview}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    messageHtml += '</div>';
+                }
+            }
+            
+            messageHtml += '</div>';
+            messageDiv.innerHTML = messageHtml;
+            
+            messages.appendChild(messageDiv);
+            
+            // Trigger syntax highlighting for code blocks
+            if (typeof Prism !== 'undefined' && sender === 'assistant') {
+                setTimeout(() => {
+                    Prism.highlightAllUnder(messageDiv);
+                }, 10);
+            }
+            
+            scrollToBottom();
+        }
+
+        function getModelIcon(modelType) {
+            const icons = {
+                'technical': '🔧',
+                'creative': '🎨',
+                'code': '💻',
+                'general': '🧠',
+                'reasoning': '🤔',
+                'scientific': '🔬',
+                'chat': '💬',
+                'analysis': '📊'
+            };
+            return icons[modelType.toLowerCase()] || '🤖';
+        }
+
+        // Function to parse individual responses from multi-model content
+        function parseIndividualResponses(content, modelTypes) {
+            const responses = {};
+            
+            // Try to split content by model type headers
+            modelTypes.forEach(modelType => {
+                const modelName = modelType.charAt(0).toUpperCase() + modelType.slice(1);
+                const patterns = [
+                    new RegExp(`${modelName}[\\s]*Model[\\s]*:([\\s\\S]*?)(?=${modelTypes.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join('|')}|$)`, 'i'),
+                    new RegExp(`${modelType}[\\s]*:([\\s\\S]*?)(?=${modelTypes.join('|')}|$)`, 'i'),
+                    new RegExp(`\\*\\*${modelName}[\\s]*Response\\*\\*[\\s]*:?([\\s\\S]*?)(?=\\*\\*|$)`, 'i')
+                ];
+                
+                for (const pattern of patterns) {
+                    const match = content.match(pattern);
+                    if (match && match[1]) {
+                        responses[modelType] = match[1].trim();
+                        break;
+                    }
+                }
+            });
+            
+            return responses;
+        }
+
+        // Enhanced function to parse model responses from combined content
+        function parseModelResponses(content, modelTypes) {
+            const responses = {};
+            
+            // More comprehensive patterns for different response formats
+            modelTypes.forEach(modelType => {
+                const modelName = modelType.charAt(0).toUpperCase() + modelType.slice(1);
+                const patterns = [
+                    // Pattern: **Model Name Response:** or **Model Name:**
+                    new RegExp(`\\*\\*${modelName}[\\s]*(Response|Model)?[\\s]*:?\\*\\*[\\s]*([\\s\\S]*?)(?=\\*\\*|$)`, 'i'),
+                    // Pattern: ### Model Name or ## Model Name
+                    new RegExp(`#{2,3}[\\s]*${modelName}[\\s]*(Response|Model)?[\\s]*:?[\\s]*\\n([\\s\\S]*?)(?=#{2,3}|$)`, 'i'),
+                    // Pattern: Model Name: or ModelName:
+                    new RegExp(`${modelName}[\\s]*(Model)?[\\s]*:([\\s\\S]*?)(?=${modelTypes.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join('|')}|$)`, 'i'),
+                    // Pattern: From Model Name: or According to Model:
+                    new RegExp(`(?:From|According to)[\\s]+${modelName}[\\s]*(Model)?[\\s]*:([\\s\\S]*?)(?=(?:From|According to)|$)`, 'i'),
+                    // Pattern: numbered sections
+                    new RegExp(`\\d+\\.[\\s]*${modelName}[\\s]*(Response|Model)?[\\s]*:?([\\s\\S]*?)(?=\\d+\\.|$)`, 'i')
+                ];
+                
+                for (const pattern of patterns) {
+                    const match = content.match(pattern);
+                    if (match && match[match.length - 1]) {
+                        responses[modelType] = match[match.length - 1].trim();
+                        break;
+                    }
+                }
+            });
+            
+            return responses;
+        }
+
+        // Function to split combined response by common patterns
+        function splitCombinedResponse(content, modelTypes) {
+            // Try to split by common separators
+            const separators = [
+                /\n\s*---+\s*\n/,           // Horizontal rules
+                /\n\s*\*\*\*+\s*\n/,        // Asterisk separators  
+                /\n\s*===+\s*\n/,           // Equal sign separators
+                /\n\s*\d+\.\s*/,            // Numbered lists
+                /\n\s*[•·▪▫]\s*/,           // Bullet points
+                /\n\s*\n\s*\n/              // Double line breaks
+            ];
+            
+            for (const separator of separators) {
+                const parts = content.split(separator).filter(part => part.trim().length > 50);
+                if (parts.length === modelTypes.length || parts.length > 1) {
+                    return parts;
+                }
+            }
+            
+            // Fallback: try to split by paragraph length
+            const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 50);
+            if (paragraphs.length >= modelTypes.length) {
+                return paragraphs.slice(0, modelTypes.length);
+            }
+            
+            // Last resort: return the whole content
+            return [content];
+        }
+
+        function showMobileAddTypeModal() {
+            document.getElementById('mobileAddTypeModal').style.display = 'block';
+            setupMobileTemperatureSlider();
+            // Prevent background scroll
+            document.body.style.overflow = 'hidden';
+            // Focus on first input with delay for better UX
+            setTimeout(() => {
+                document.getElementById('mobileTypeName').focus();
+            }, 300);
+        }
+
+        function closeMobileAddTypeModal() {
+            document.getElementById('mobileAddTypeModal').style.display = 'none';
+            document.getElementById('mobileAddTypeForm').reset();
+            document.getElementById('mobileTemperatureValue').textContent = '0.2';
+            // Restore background scroll
+            document.body.style.overflow = '';
+        }
+
+        function setupMobileTemperatureSlider() {
+            const tempSlider = document.getElementById('mobileTypeTemperature');
+            const tempValue = document.getElementById('mobileTemperatureValue');
+            
+            tempSlider.addEventListener('input', function() {
+                tempValue.textContent = parseFloat(this.value).toFixed(1);
+            });
+        }
+
+        function scrollToBottom() {
+            const chatArea = document.querySelector('.chat-area');
+            setTimeout(() => {
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }, 100);
+        }
+
+        // Mobile Custom Types Management
+        let mobileAvailableModels = [];
+        
+        async function loadMobileCustomTypes() {
+            try {
+                const response = await fetch('/api/prompt-types');
+                const data = await response.json();
+                
+                const customTypesList = document.getElementById('mobileCustomTypesList');
+                
+                // Get only custom types (not builtin ones)
+                const customTypes = data.custom_types || [];
+                
+                if (customTypes.length === 0) {
+                    customTypesList.innerHTML = '<div style="color: #6c757d; font-style: italic; text-align: center; padding: 10px;">No custom types defined yet</div>';
+                } else {
+                    customTypesList.innerHTML = customTypes.map(type => `
+                        <div class="mobile-custom-type-item">
+                            <div class="mobile-custom-type-info">
+                                <div class="mobile-custom-type-name">${type.name}</div>
+                                <div class="mobile-custom-type-meta">
+                                    Model: ${type.model}<br>Keywords: ${type.keywords ? type.keywords.join(', ') : 'No keywords'}
+                                </div>
+                            </div>
+                            <button class="mobile-delete-type-btn" onclick="deleteMobileCustomType('${type.name}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading custom types:', error);
+                document.getElementById('mobileCustomTypesList').innerHTML = 
+                    '<div style="color: #dc3545; text-align: center; padding: 10px;">Error loading custom types</div>';
+            }
+        }
+        
+        function selectMobileModel(modelName) {
+            document.getElementById('mobileTypeModel').value = modelName;
+            
+            // Auto-suggest settings based on model
+            const tempSlider = document.getElementById('mobileTypeTemperature');
+            const tempValue = document.getElementById('mobileTemperatureValue');
+            const keywordsField = document.getElementById('mobileTypeKeywords');
+            const descField = document.getElementById('mobileTypeDescription');
+            
+            let suggestedTemp = 0.2;
+            let suggestedKeywords = '';
+            let suggestedDesc = '';
+            
+            if (modelName.includes('code') || modelName.includes('coder')) {
+                suggestedTemp = 0.0;
+                suggestedKeywords = 'code, programming, development';
+                suggestedDesc = `Code generation using ${modelName}`;
+            } else if (modelName.includes('qwen')) {
+                suggestedTemp = 0.1;
+                suggestedKeywords = 'analysis, reasoning, logic';
+                suggestedDesc = `Reasoning tasks using ${modelName}`;
+            } else if (modelName.includes('mistral')) {
+                suggestedTemp = 0.3;
+                suggestedKeywords = 'general, knowledge, questions';
+                suggestedDesc = `General queries using ${modelName}`;
+            } else if (modelName.includes('llama')) {
+                suggestedTemp = 0.2;
+                suggestedKeywords = 'chat, conversation, general';
+                suggestedDesc = `Conversational AI using ${modelName}`;
+            } else if (modelName.includes('gemma')) {
+                suggestedTemp = 0.4;
+                suggestedKeywords = 'creative, writing, stories';
+                suggestedDesc = `Creative tasks using ${modelName}`;
+            }
+            
+            // Update form fields
+            tempSlider.value = suggestedTemp;
+            tempValue.textContent = suggestedTemp.toFixed(1);
+            keywordsField.value = suggestedKeywords;
+            descField.value = suggestedDesc;
+            
+            // Provide haptic feedback on mobile
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }
+        function scrollToBottom() {
+            const chatArea = document.querySelector('.chat-area');
+            setTimeout(() => {
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }, 100);
+        }
+
+        async function loadMobileAvailableModels() {
+            try {
+                const response = await fetch('/api/ollama-models');
+                mobileAvailableModels = await response.json();
+                
+                const modelSelect = document.getElementById('mobileTypeModel');
+                modelSelect.innerHTML = '<option value="">Select a model...</option>' +
+                    mobileAvailableModels.map(model => `<option value="${model}">${model}</option>`).join('');
+            } catch (error) {
+                document.getElementById('mobileTypeModel').innerHTML = 
+                    '<option value="">Error loading models</option>';
+            }
+        }
+
+        async function deleteMobileCustomType(typeName) {
+            if (!confirm(`Delete custom type "${typeName}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/prompt-types/${encodeURIComponent(typeName)}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (response.ok) {
+                    loadMobileCustomTypes(); // Reload the list
+                    showToast('Custom type deleted successfully');
+                } else {
+                    const errorData = await response.json();
+                    showToast('Failed to delete custom type: ' + (errorData.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Error deleting custom type: ' + error.message, 'error');
+            }
+        }
+        // Handle mobile form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileAddTypeForm = document.getElementById('mobileAddTypeForm');
+            if (mobileAddTypeForm) {
+                mobileAddTypeForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+
+                    const typeName = document.getElementById('mobileTypeName').value.trim().toLowerCase();
+                    const keywords = document.getElementById('mobileTypeKeywords').value.split(',').map(k => k.trim()).filter(k => k);
+                    const model = document.getElementById('mobileTypeModel').value.trim();
+                    const description = document.getElementById('mobileTypeDescription').value.trim();
+                    const temperature = parseFloat(document.getElementById('mobileTypeTemperature').value);
+
+                    // Validation
+                    if (!typeName || !model || !description || keywords.length === 0) {
+                        showToast('Please fill in all required fields', 'error');
+                        return;
+                    }
+
+                    if (temperature < 0 || temperature > 1) {
+                        showToast('Temperature must be between 0 and 1', 'error');
+                        return;
+                    }
+
+                    // Show loading state
+                    const submitBtn = document.querySelector('.mobile-btn-submit');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+                    submitBtn.disabled = true;
+
+                    try {
+                        const response = await fetch('/api/prompt-types', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                name: typeName,
+                                keywords: keywords,
+                                model: model,
+                                temperature: temperature,
+                                description: description
+                            })
+                        });
+
+                        if (response.ok) {
+                            const result = await response.json();
+                            closeMobileAddTypeModal();
+                            loadMobileCustomTypes(); // Reload the list
+                            
+                            // Show success message
+                            if (result.model_pulled) {
+                                showToast(`✅ Success! "${typeName}" added. Model downloaded automatically.`);
+                            } else {
+                                showToast(`✅ Custom type "${typeName}" added successfully!`);
+                            }
+                        } else {
+                            const error = await response.json();
+                            showToast('❌ Failed: ' + (error.error || 'Unknown error'), 'error');
+                        }
+                    } catch (error) {
+                        showToast('❌ Network error: ' + error.message, 'error');
+                    } finally {
+                        // Restore button state
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                    }
+                });
+            }
+        });
+
+        // Toast notification function
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 100px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: ${type === 'error' ? '#dc3545' : '#28a745'};
+                color: white;
+                padding: 12px 24px;
+                border-radius: 25px;
+                font-size: 0.9rem;
+                z-index: 10000;
+                animation: slideUp 0.3s ease-out;
+            `;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideDown 0.3s ease-out forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Load mobile custom types on page load
+        loadMobileCustomTypes();
+
+        async function clearHistory() {
+            try {
+                await fetch('/api/clear-history', { method: 'POST' });
+                document.getElementById('messages').innerHTML = `
+                    <div class="welcome-message">
+                        <i class="fas fa-robot"></i>
+                        <h3>Chat Cleared!</h3>
+                        <p>How can I help you today?</p>
+                    </div>
+                `;
+                questionCount = 0;
+                documentCount = 0;
+                document.getElementById('questionCount').textContent = '0';
+                document.getElementById('documentCount').textContent = '0';
+                toggleMenu(); // Close menu
+            } catch (error) {
+                console.error('Failed to clear history:', error);
+            }
+        }
+
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                
+                const indicator = document.getElementById('statusIndicator');
+                if (data.status === 'healthy' && data.rag_initialized) {
+                    indicator.style.background = '#4CAF50';
+                } else {
+                    indicator.style.background = '#FF9800';
+                }
+            } catch (error) {
+                document.getElementById('statusIndicator').style.background = '#F44336';
+            }
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            loadModels();
+            checkStatus();
+            loadMobileDocumentInfo();
+            document.getElementById('questionInput').focus();
+        });
+
+        // Mobile-specific touch handlers
+        function handleTouchStart(e) {
+            e.currentTarget.style.transform = 'scale(0.98)';
+        }
+
+        function handleTouchEnd(e) {
+            e.currentTarget.style.transform = 'scale(1)';
+        }
+
+        // Mobile file upload
+        async function handleMobileFiles(files) {
+            if (!files.length) return;
+
+            const uploadArea = document.querySelector('.upload-area');
+            const statusDiv = document.getElementById('mobileUploadStatus');
+            
+            uploadArea.classList.add('uploading');
+            statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+
+            const formData = new FormData();
+            for (let file of files) {
+                formData.append('files', file);
+            }
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    statusDiv.innerHTML = `<div class="upload-success">
+                        <i class="fas fa-check-circle"></i> Uploaded ${data.total_chunks} chunks!
+                    </div>`;
+
+                    // Refresh document info
+                    loadMobileDocumentInfo();
+                    
+                    // Auto close menu after successful upload
+                    setTimeout(() => {
+                        if (isMenuOpen) toggleMenu();
+                    }, 2000);
+                } else {
+                    statusDiv.innerHTML = `<div class="upload-error">
+                        <i class="fas fa-exclamation-circle"></i> ${data.error}
+                    </div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="upload-error">
+                    <i class="fas fa-exclamation-circle"></i> Upload failed
+                </div>`;
+            } finally {
+                uploadArea.classList.remove('uploading');
+                
+                // Clear status after 3 seconds
+                setTimeout(() => {
+                    statusDiv.innerHTML = '';
+                }, 3000);
+            }
+        }
+
+        async function loadMobileDocumentInfo() {
+            try {
+                const response = await fetch('/api/documents');
+                const data = await response.json();
+                
+                document.getElementById('mobileDocCount').textContent = data.total;
+                document.getElementById('mobileSourceCount').textContent = data.source_count;
+            } catch (error) {
+                document.getElementById('mobileDocCount').textContent = 'Error';
+                document.getElementById('mobileSourceCount').textContent = 'Error';
+            }
+        }
+
+        function toggleMobileSource(sourceId) {
+            const content = document.getElementById(sourceId);
+            const icon = document.getElementById(`icon-${sourceId}`);
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                icon.classList.remove('rotated');
+            } else {
+                content.classList.add('expanded');
+                icon.classList.add('rotated');
+            }
+        }
+
+        // Periodic status check
+        setInterval(checkStatus, 30000);
+
+        // Handle viewport changes on mobile
+        window.addEventListener('resize', () => {
+            scrollToBottom();
+        });
+
+        // Prevent zoom on iOS
+        document.addEventListener('touchstart', function(event) {
+            if (event.touches.length > 1) {
+                event.preventDefault();
+            }
+        });
+    </script>
+
+    <!-- Mobile Add Custom Type Modal -->
+    <div id="mobileAddTypeModal" class="mobile-modal">
+        <div class="mobile-modal-content">
+            <div class="mobile-modal-header">
+                <h3><i class="fas fa-plus-circle"></i> Add Custom Type</h3>
+                <span class="mobile-close" onclick="closeMobileAddTypeModal()">&times;</span>
+            </div>
+            <form id="mobileAddTypeForm">
+                <div class="mobile-form-group">
+                    <label for="mobileTypeName">Type Name:</label>
+                    <input type="text" id="mobileTypeName" required placeholder="e.g., finance, medical, creative">
+                </div>
+                
+                <div class="mobile-form-group">
+                    <label for="mobileTypeModel">Ollama Model Name:</label>
+                    <input type="text" id="mobileTypeModel" required 
+                           placeholder="e.g., llama3.2:3b, mistral:7b">
+                    <div class="mobile-model-suggestions">
+                        <div class="mobile-suggestion-tags">
+                            <span class="mobile-suggestion-tag" onclick="selectMobileModel('llama3.2:1b')">llama3.2:1b</span>
+                            <span class="mobile-suggestion-tag" onclick="selectMobileModel('llama3.2:3b')">llama3.2:3b</span>
+                            <span class="mobile-suggestion-tag" onclick="selectMobileModel('mistral:7b')">mistral:7b</span>
+                            <span class="mobile-suggestion-tag" onclick="selectMobileModel('qwen2.5:7b')">qwen2.5:7b</span>
+                            <span class="mobile-suggestion-tag" onclick="selectMobileModel('codellama')">codellama</span>
+                            <span class="mobile-suggestion-tag" onclick="selectMobileModel('gemma2:2b')">gemma2:2b</span>
+                        </div>
+                        <small class="mobile-model-help">
+                            💡 Smaller models (1b, 3b) are faster • Larger models (7b+) more capable
+                        </small>
+                    </div>
+                </div>
+
+                <div class="mobile-form-group">
+                    <label for="mobileTypeTemperature">Temperature:</label>
+                    <div class="mobile-temperature-input">
+                        <input type="range" id="mobileTypeTemperature" min="0" max="1" step="0.1" value="0.2">
+                        <span id="mobileTemperatureValue">0.2</span>
+                    </div>
+                    <small class="mobile-temperature-guide">0.0 = Focused • 0.2 = Balanced • 0.7 = Creative</small>
+                </div>
+                
+                <div class="mobile-form-group">
+                    <label for="mobileTypeKeywords">Keywords (comma-separated):</label>
+                    <input type="text" id="mobileTypeKeywords" required 
+                           placeholder="e.g., finance, banking, trading">
+                    <small class="mobile-keywords-help">Keywords help the system know when to use this model</small>
+                </div>
+                
+                <div class="mobile-form-group">
+                    <label for="mobileTypeDescription">Description:</label>
+                    <textarea id="mobileTypeDescription" required
+                              placeholder="Describe when to use this type (e.g., For financial questions)"></textarea>
+                </div>
+                
+                <div class="mobile-form-actions">
+                    <button type="button" class="mobile-btn-cancel" onclick="closeMobileAddTypeModal()">Cancel</button>
+                    <button type="submit" class="mobile-btn-submit">
+                        <i class="fas fa-plus"></i> Add Type
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

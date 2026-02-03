@@ -1,0 +1,2985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Model RAG Assistant</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Prism.js for code syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 1200px;
+            height: 90vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 350px;
+            min-width: 350px;
+            background: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%);
+            padding: 30px 20px;
+            color: white;
+            overflow-y: auto;
+            height: 100%;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo i {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .model-info {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .model-info h3 {
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .model-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin: 2px;
+        }
+
+        .stats {
+            margin-top: 30px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 0.9rem;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .header h2 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 30px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message.assistant {
+            text-align: left;
+        }
+
+        .message-content {
+            display: inline-block;
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 20px;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message.assistant .message-content {
+            background: white;
+            border: 1px solid #e9ecef;
+            color: #2c3e50;
+        }
+
+        .message-info {
+            font-size: 0.8rem;
+            margin-top: 5px;
+            opacity: 0.7;
+        }
+
+        .sources {
+            margin-top: 10px;
+            font-size: 0.8rem;
+        }
+
+        .source-item {
+            background: #e7f3ff;
+            padding: 5px 10px;
+            margin: 2px;
+            border-radius: 10px;
+            display: inline-block;
+            border-left: 3px solid #007bff;
+        }
+
+        .source-detail {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            margin: 8px 0;
+            overflow: hidden;
+        }
+
+        .source-header {
+            background: #e9ecef;
+            padding: 10px 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .source-header:hover {
+            background: #dee2e6;
+        }
+
+        .source-content {
+            padding: 15px;
+            border-top: 1px solid #e9ecef;
+            display: none;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            background: #f8f9fa;
+        }
+
+        .source-content.expanded {
+            display: block;
+        }
+
+        .expand-icon {
+            transition: transform 0.2s;
+        }
+
+        .expand-icon.rotated {
+            transform: rotate(90deg);
+        }
+
+        .source-meta {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .input-container {
+            padding: 20px 30px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-height: 80px;
+        }
+        .input-group {
+            flex: 1;
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 25px;
+            padding: 5px;
+            border: 1px solid #e9ecef;
+        }
+
+        #questionInput {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 15px 20px;
+            font-size: 1rem;
+            outline: none;
+            resize: none;
+            min-height: 20px;
+            max-height: 100px;
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 0.3;
+            }
+            100% {
+                opacity: 0.5;
+            }
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            margin: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        #loadingText {
+            margin-top: 8px;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        /* Code formatting styles */
+        .message-content pre {
+            background: #2d3748;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 10px 0;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .message-content pre code {
+            color: #e2e8f0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .message-content code:not(pre code) {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            color: #e53e3e;
+        }
+
+        .code-header {
+            background: #1a202c;
+            color: #a0aec0;
+            padding: 8px 16px;
+            border-radius: 8px 8px 0 0;
+            font-size: 12px;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .copy-code-btn {
+            background: #4a5568;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: background 0.2s;
+        }
+
+        .copy-code-btn:hover {
+            background: #2d3748;
+        }
+
+        .copy-code-btn.copied {
+            background: #38a169;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .clear-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .clear-btn:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+        }
+
+        /* Custom Types Styles */
+        .custom-types {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .custom-types h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+
+        #customTypesList {
+            max-height: 150px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+
+        .custom-type-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .custom-type-info {
+            flex-grow: 1;
+        }
+
+        .custom-type-name {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .custom-type-meta {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 2px;
+        }
+
+        .custom-type-description {
+            font-size: 0.75rem;
+            color: #666;
+            font-style: italic;
+            margin-top: 3px;
+        }
+
+        .custom-type-actions {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .modify-type-btn,
+        .delete-type-btn {
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            min-width: 30px;
+        }
+
+        .modify-type-btn {
+            background: #007bff;
+            color: white;
+        }
+
+        .modify-type-btn:hover {
+            background: #0056b3;
+        }
+
+        .delete-type-btn {
+            background: #dc3545;
+            color: white;
+        }
+
+        .delete-type-btn:hover {
+            background: #c82333;
+        }
+
+        /* Type Management Buttons */
+        .type-management-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .add-type-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .add-type-btn:hover {
+            background: #218838;
+        }
+
+        .add-type-btn i {
+            font-size: 0.8rem;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            animation: slideIn 0.3s ease-out;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .modal-content h2 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .close {
+            color: white;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close:hover,
+        .close:focus {
+            opacity: 0.7;
+        }
+
+        .form-group {
+            margin: 15px 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-actions {
+            padding: 20px;
+            text-align: right;
+            border-top: 1px solid #eee;
+        }
+
+        .btn-cancel,
+        .btn-submit {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-left: 10px;
+        }
+
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+
+        .btn-submit {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-submit:hover {
+            background: #218838;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .upload-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px 0;
+        }
+
+        .upload-area:hover, .upload-area.drag-over {
+            border-color: rgba(255,255,255,0.6);
+            background: rgba(255,255,255,0.1);
+        }
+
+        .upload-area.uploading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .upload-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+
+        .upload-btn:hover {
+            background: #218838;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-status {
+            margin-top: 10px;
+            font-size: 0.8rem;
+        }
+
+        .upload-success {
+            color: #4CAF50;
+        }
+
+        .upload-error {
+            color: #f44336;
+        }
+
+        .document-info {
+            margin-top: 20px;
+            font-size: 0.8rem;
+        }
+
+        .doc-count {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 15px;
+            display: inline-block;
+            margin: 2px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                flex-direction: column;
+                height: 95vh;
+                border-radius: 10px;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 40vh;
+                padding: 15px;
+                overflow-y: auto;
+            }
+
+            .main-content {
+                flex: 1;
+                min-height: 60vh;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+            
+            .header {
+                padding: 15px 20px;
+            }
+            
+            .input-container {
+                padding: 15px 20px;
+                min-height: 70px;
+            }
+            
+            .messages {
+                padding: 15px 20px;
+            }
+        }
+
+        /* Enhanced Add Custom Type Modal Styles */
+        .model-suggestions {
+            margin-top: 8px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+        }
+
+        .suggestion-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 8px 0;
+        }
+
+        .suggestion-tag {
+            background: #007bff;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            display: inline-block;
+        }
+
+        .suggestion-tag:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        .model-help {
+            color: #6c757d;
+            line-height: 1.4;
+            margin-top: 8px;
+            display: block;
+        }
+
+        .model-help a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .model-help a:hover {
+            text-decoration: underline;
+        }
+
+        .temperature-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .temperature-input input[type="range"] {
+            flex: 1;
+            height: 6px;
+            background: #ddd;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .temperature-input input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #007bff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .temperature-input input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #007bff;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .temperature-guide {
+            margin-top: 5px;
+        }
+
+        .temperature-guide small {
+            color: #6c757d;
+            font-size: 0.75rem;
+        }
+
+        .keywords-help {
+            color: #6c757d;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            display: block;
+        }
+
+        /* Mobile optimizations for modal */
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 95%;
+                max-width: 95%;
+                margin: 5% auto;
+                padding: 15px;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+
+            .suggestion-tags {
+                gap: 4px;
+            }
+
+            .suggestion-tag {
+                font-size: 0.7rem;
+                padding: 3px 6px;
+            }
+
+            .form-group {
+                margin-bottom: 15px;
+            }
+
+            .form-group label {
+                margin-bottom: 5px;
+            }
+
+            .form-actions {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .btn-cancel,
+            .btn-submit {
+                width: 100%;
+                margin-left: 0;
+                padding: 12px;
+            }
+
+            .temperature-input {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .model-help {
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Touch-friendly mobile improvements */
+        @media (max-width: 480px) {
+            .modal-content {
+                margin: 2% auto;
+                padding: 10px;
+            }
+
+            .modal-content h2 {
+                font-size: 1.2rem;
+                margin-bottom: 15px;
+            }
+
+            .form-group input,
+            .form-group textarea {
+                font-size: 16px; /* Prevents zoom on iOS */
+                padding: 12px;
+            }
+
+            .close {
+                font-size: 24px;
+                padding: 5px;
+                min-width: 30px;
+                min-height: 30px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        /* Desktop Multi-model functionality styles */
+        .desktop-multi-model-controls {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .desktop-multi-toggle {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .desktop-toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 28px;
+            background: #ccc;
+            border-radius: 28px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .desktop-toggle-switch.active {
+            background: #667eea;
+        }
+
+        .desktop-toggle-knob {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .desktop-toggle-switch.active .desktop-toggle-knob {
+            transform: translateX(22px);
+        }
+
+        .desktop-model-selector {
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .desktop-model-selector.active {
+            display: block;
+        }
+
+        .desktop-model-selector-header {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+        }
+
+        .desktop-model-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .desktop-model-option {
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .desktop-model-option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .desktop-model-option.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .desktop-multi-info {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+            color: #1565c0;
+        }
+
+        .desktop-multi-info i {
+            margin-right: 6px;
+        }
+
+        /* Multi-model response display styles */
+        .multi-response {
+            background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+            border: 2px solid #e3f2fd;
+            border-radius: 15px;
+            margin: 15px 0;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+            overflow: hidden;
+        }
+
+        .multi-response-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 16px;
+            margin: 0;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .multi-response-content {
+            padding: 16px;
+            background: white;
+        }
+
+        .individual-model-response {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            margin: 12px 0;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            animation: slideInFromRight 0.5s ease-out;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .individual-model-response:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .individual-model-response.combined-response {
+            border: 2px solid #28a745;
+            background: linear-gradient(135deg, #f8fff9 0%, #ffffff 100%);
+            box-shadow: 0 4px 16px rgba(40, 167, 69, 0.15);
+            margin: 8px 0;
+        }
+
+        .individual-model-response.combined-response .model-response-header {
+            background: linear-gradient(45deg, #28a745, #20c997) !important;
+        }
+
+        .individual-model-response.combined-response:nth-child(odd) {
+            border-left: 4px solid #007bff;
+        }
+
+        .individual-model-response.combined-response:nth-child(even) {
+            border-left: 4px solid #6f42c1;
+        }
+
+        .model-wise-separator {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(40, 167, 69, 0.3), transparent);
+            margin: 10px 0;
+        }
+
+        .model-separator {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #667eea, transparent);
+            margin: 20px 0;
+            border-radius: 2px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 20px 0 15px 0;
+            padding: 10px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section-header.combined {
+            color: #28a745;
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(32, 201, 151, 0.1));
+            border-left-color: #28a745;
+        }
+
+        @keyframes slideInFromRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .model-response-header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .model-response-body {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .model-badge {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .model-type-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+        }
+
+        .multi-model-summary {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            border: 1px solid #bbdefb;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: fadeInUp 0.4s ease-out;
+        }
+
+        .summary-icon {
+            width: 24px;
+            height: 24px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+        }
+
+        .summary-text {
+            flex: 1;
+            font-size: 0.8rem;
+            color: #1565c0;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="logo">
+                <i class="fas fa-robot"></i>
+                <h1>RAG Assistant</h1>
+            </div>
+            
+            <div class="model-info">
+                <h3><i class="fas fa-brain"></i> Active Models</h3>
+                <div id="modelBadges"></div>
+            </div>
+            
+            <div class="upload-section">
+                <h3><i class="fas fa-upload"></i> Upload Documents</h3>
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()" 
+                     ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                    <div>Drag & drop files here or click to browse</div>
+                    <div style="font-size: 0.7rem; opacity: 0.8; margin-top: 5px;">
+                        Supported: PDF, TXT files (Max 16MB)
+                    </div>
+                </div>
+                <input type="file" id="fileInput" class="file-input" multiple accept=".pdf,.txt" onchange="handleFiles(this.files)">
+                <div class="upload-status" id="uploadStatus"></div>
+            </div>
+            
+            <div class="document-info" id="documentInfo">
+                <h3><i class="fas fa-database"></i> Document Database</h3>
+                <div id="docStats">Loading...</div>
+            </div>
+            
+            <div class="stats">
+                <h3><i class="fas fa-chart-line"></i> Statistics</h3>
+                <div class="stat-item">
+                    <span>Questions Asked:</span>
+                    <span id="questionCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Documents Used:</span>
+                    <span id="documentCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Status:</span>
+                    <span id="systemStatus">Ready</span>
+                </div>
+            </div>
+            
+            <!-- Custom Types Management -->
+            <div class="custom-types">
+                <h3><i class="fas fa-cogs"></i> Custom Types</h3>
+                <div id="customTypesList">Loading...</div>
+                <div class="type-management-buttons">
+                    <button class="add-type-btn" onclick="showAddTypeModal()">
+                        <i class="fas fa-plus"></i> Add Custom Type
+                    </button>
+                    <button class="add-type-btn" onclick="showMapModelModal()">
+                        <i class="fas fa-link"></i> Map Model to Type
+                    </button>
+                    <button class="add-type-btn" onclick="showAvailableModelsModal()">
+                        <i class="fas fa-list"></i> Available Models
+                    </button>
+                </div>
+            </div>
+
+            <button class="clear-btn" onclick="clearHistory()">
+                <i class="fas fa-trash"></i> Clear History
+            </button>
+        </div>
+        
+        <div class="main-content">
+            <div class="header">
+                <h2>Multi-Model RAG Assistant</h2>
+                <p>Ask questions and get intelligent answers from multiple AI models</p>
+            </div>
+            
+            <div class="chat-container">
+                <div class="messages" id="messages">
+                    <div class="message assistant">
+                        <div class="message-content">
+                            👋 Hello! I'm your Multi-Model RAG Assistant. I can answer questions using different AI models based on your question type:
+                            <br><br>
+                            • <strong>Technical</strong> questions → llama3.1
+                            • <strong>Code</strong> questions → codellama  
+                            • <strong>Creative</strong> questions → gemma2
+                            • <strong>Analysis</strong> questions → llama3.1
+                            • <strong>General</strong> questions → gemma2
+                            <br><br>
+                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px; border-radius: 10px; margin: 10px 0;">
+                                <strong>🔥 Pro Tip:</strong> You can now specify multiple question types in one query! Use syntax like:<br>
+                                <em>"Technical: How do car engines work? Creative: Write a story about cars"</em><br>
+                                I'll automatically parse your question and use the appropriate models! 🎯
+                            </div>
+                            <br>
+                            Ask me anything! 🤔
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <div id="loadingText">Analyzing your question and searching knowledge base...</div>
+                </div>
+            </div>
+            
+            <div class="input-container">
+                <!-- Desktop Multi-model controls -->
+                <div class="desktop-multi-model-controls" id="desktopMultiControls">
+                    <div class="desktop-multi-toggle">
+                        <div class="desktop-toggle-switch" onclick="toggleDesktopMultiModel()" id="desktopMultiToggle">
+                            <div class="desktop-toggle-knob"></div>
+                        </div>
+                        <span>Multi-Model Query</span>
+                    </div>
+                    
+                    <div class="desktop-model-selector" id="desktopModelSelector">
+                        <div class="desktop-model-selector-header">Select AI Models for Different Perspectives:</div>
+                        <div class="desktop-multi-info">
+                            <i class="fas fa-lightbulb"></i> Get answers from multiple specialized AI models simultaneously for comprehensive insights.
+                        </div>
+                        <div class="desktop-model-options" id="desktopModelOptions">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <textarea id="questionInput" placeholder="Ask your question here..." rows="1"></textarea>
+                </div>
+                <button class="send-btn" onclick="askQuestion()" id="sendBtn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let questionCount = 0;
+        let documentCount = 0;
+
+        function formatCodeBlocks(content) {
+            // Format code blocks with syntax highlighting
+            content = content.replace(/```(\w+)?\n([\s\S]*?)```/g, function(match, language, code) {
+                const lang = language || 'text';
+                const codeId = 'code-' + Math.random().toString(36).substr(2, 9);
+                
+                return `
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>${lang.toUpperCase()}</span>
+                            <button class="copy-code-btn" onclick="copyCode('${codeId}')">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                        <pre><code id="${codeId}" class="language-${lang}">${escapeHtml(code.trim())}</code></pre>
+                    </div>
+                `;
+            });
+
+            // Format inline code
+            content = content.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            return content;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function copyCode(codeId) {
+            const codeElement = document.getElementById(codeId);
+            const text = codeElement.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = codeElement.parentNode.parentNode.querySelector('.copy-code-btn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.classList.add('copied');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy code: ', err);
+            });
+        }
+
+        // Auto-resize textarea
+        const textarea = document.getElementById('questionInput');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+
+        // Enter key to send
+        textarea.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                askQuestion();
+            }
+        });
+
+        // Load initial data
+        // Desktop Multi-model functionality
+        let isDesktopMultiModelMode = false;
+        let selectedDesktopModels = [];
+
+        function toggleDesktopMultiModel() {
+            const toggle = document.getElementById('desktopMultiToggle');
+            const selector = document.getElementById('desktopModelSelector');
+            
+            isDesktopMultiModelMode = !isDesktopMultiModelMode;
+            
+            if (isDesktopMultiModelMode) {
+                toggle.classList.add('active');
+                selector.classList.add('active');
+                loadDesktopAvailableModelTypes();
+            } else {
+                toggle.classList.remove('active');
+                selector.classList.remove('active');
+                selectedDesktopModels = [];
+            }
+        }
+
+        async function loadDesktopAvailableModelTypes() {
+            try {
+                const response = await fetch('/api/models');
+                const data = await response.json();
+                
+                const modelOptions = document.getElementById('desktopModelOptions');
+                const allModels = { ...data.models };
+                
+                // Create model option buttons
+                modelOptions.innerHTML = Object.keys(allModels).map(modelType => {
+                    const modelConfig = allModels[modelType];
+                    return `
+                        <div class="desktop-model-option" onclick="toggleDesktopModelSelection('${modelType}')" data-model="${modelType}">
+                            <div style="font-weight: bold;">${modelType.charAt(0).toUpperCase() + modelType.slice(1)}</div>
+                            <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 2px;">${modelConfig.model}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('Failed to load model types:', error);
+                document.getElementById('desktopModelOptions').innerHTML = 
+                    '<div style="color: #dc3545; text-align: center;">Error loading models</div>';
+            }
+        }
+
+        function toggleDesktopModelSelection(modelType) {
+            const option = document.querySelector(`[data-model="${modelType}"]`);
+            
+            if (selectedDesktopModels.includes(modelType)) {
+                selectedDesktopModels = selectedDesktopModels.filter(m => m !== modelType);
+                option.classList.remove('selected');
+            } else {
+                selectedDesktopModels.push(modelType);
+                option.classList.add('selected');
+            }
+        }
+
+        async function askDesktopMultiModel(question) {
+            if (selectedDesktopModels.length === 0) {
+                addMessage('❌ Please select at least one model for multi-model query.', 'assistant', { prompt_type: 'error' });
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/ask-multi', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        question: question,
+                        model_types: selectedDesktopModels
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Add multi-model response with special formatting
+                    addMessage(data.answer, 'assistant', {
+                        ...data,
+                        isDesktopMultiModel: true,
+                        selectedModels: selectedDesktopModels
+                    });
+                    
+                    // Update stats
+                    questionCount++;
+                    document.getElementById('questionCount').textContent = questionCount;
+                    
+                    if (data.sources && data.sources.length > 0) {
+                        documentCount += data.sources.length;
+                        document.getElementById('documentCount').textContent = documentCount;
+                    }
+                } else {
+                    addMessage(`❌ Multi-Model Error: ${data.error}`, 'assistant', { prompt_type: 'error' });
+                }
+            } catch (error) {
+                addMessage(`❌ Multi-Model Network Error: ${error.message}`, 'assistant', { prompt_type: 'error' });
+            }
+        }
+
+        async function loadModels() {
+            try {
+                const response = await fetch('/api/models');
+                const data = await response.json();
+                
+                const badgeContainer = document.getElementById('modelBadges');
+                badgeContainer.innerHTML = '';
+                
+                Object.keys(data.models).forEach(type => {
+                    const model = data.models[type];
+                    const badge = document.createElement('div');
+                    badge.className = 'model-badge';
+                    badge.textContent = `${type}: ${model.model}`;
+                    badgeContainer.appendChild(badge);
+                });
+            } catch (error) {
+                console.error('Failed to load models:', error);
+            }
+        }
+
+        async function askQuestion() {
+            const input = document.getElementById('questionInput');
+            const question = input.value.trim();
+            
+            if (!question) return;
+            
+            // Clear input
+            input.value = '';
+            input.style.height = 'auto';
+            
+            // Add user message
+            addMessage(question, 'user');
+            
+            // Check if desktop multi-model mode is enabled
+            if (isDesktopMultiModelMode) {
+                // Show loading for multi-model
+                const loadingEl = document.getElementById('loading');
+                const loadingTextEl = document.getElementById('loadingText');
+                const sendBtn = document.getElementById('sendBtn');
+                
+                loadingEl.style.display = 'block';
+                sendBtn.disabled = true;
+                loadingTextEl.textContent = 'Processing with multiple AI models...';
+                
+                await askDesktopMultiModel(question);
+                
+                loadingEl.style.display = 'none';
+                sendBtn.disabled = false;
+                loadingTextEl.textContent = 'Analyzing your question and searching knowledge base...';
+                input.focus();
+                return;
+            }
+            
+            // Show loading with dynamic messages
+            const loadingEl = document.getElementById('loading');
+            const loadingTextEl = document.getElementById('loadingText');
+            const sendBtn = document.getElementById('sendBtn');
+            
+            loadingEl.style.display = 'block';
+            sendBtn.disabled = true;
+            
+            // Dynamic loading messages
+            const messages = [
+                'Analyzing your question...',
+                'Searching knowledge base...',
+                'Selecting optimal AI model...',
+                'Generating response...'
+            ];
+            
+            let messageIndex = 0;
+            const messageInterval = setInterval(() => {
+                if (messageIndex < messages.length) {
+                    loadingTextEl.textContent = messages[messageIndex];
+                    messageIndex++;
+                }
+            }, 800);
+            
+            try {
+                const response = await fetch('/api/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Add assistant response
+                    addMessage(data.answer, 'assistant', data);
+                    
+                    // Update stats
+                    questionCount++;
+                    document.getElementById('questionCount').textContent = questionCount;
+                    
+                    if (data.sources && data.sources.length > 0) {
+                        documentCount += data.sources.length;
+                        document.getElementById('documentCount').textContent = documentCount;
+                    }
+                } else {
+                    addMessage(`Error: ${data.error}`, 'assistant', { prompt_type: 'error' });
+                }
+            } catch (error) {
+                addMessage(`Network error: ${error.message}`, 'assistant', { prompt_type: 'error' });
+            } finally {
+                // Clear loading messages interval
+                clearInterval(messageInterval);
+                
+                // Hide loading
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('sendBtn').disabled = false;
+                
+                // Reset loading text
+                document.getElementById('loadingText').textContent = 'Analyzing your question and searching knowledge base...';
+                
+                // Focus input
+                input.focus();
+            }
+        }
+
+        function addMessage(content, sender, data = null) {
+            const messages = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            // Format content with code highlighting if it's from assistant
+            let formattedContent = content;
+            if (sender === 'assistant') {
+                formattedContent = formatCodeBlocks(content);
+            }
+            
+            let messageHtml = `<div class="message-content">`;
+            
+            // Handle multi-model responses with enhanced display
+            if (data && sender === 'assistant' && (data.prompt_type === 'auto-parsed-multi' || data.prompt_type === 'auto-multi-fallback' || data.isDesktopMultiModel)) {
+                const isAutoParsed = data.prompt_type === 'auto-parsed-multi';
+                const isAutoFallback = data.prompt_type === 'auto-multi-fallback';
+                const modelCount = isAutoParsed ? data.parsed_sections?.length : 
+                                  isAutoFallback ? data.used_models?.length : data.selectedModels?.length;
+                
+                messageHtml += `
+                    <div class="multi-model-summary">
+                        <div class="summary-icon">
+                            <i class="fas fa-${isAutoFallback ? 'shield-alt' : 'brain'}"></i>
+                        </div>
+                        <div class="summary-text">
+                            <strong>${isAutoParsed ? 'Auto-Parsed' : isAutoFallback ? 'Auto-Fallback' : 'Manual'} Multi-Model Response</strong><br>
+                            ${isAutoFallback ? `🔍 No documents found - using ${modelCount} AI models for comprehensive coverage` : 
+                              `${modelCount} AI model${modelCount > 1 ? 's' : ''} provided ${modelCount > 1 ? 'their' : 'its'} perspective`}
+                        </div>
+                    </div>
+                `;
+
+                // Parse and display individual model responses
+                if (isAutoParsed && data.parsed_sections) {
+                    // For auto-parsed responses, extract individual responses
+                    const sections = data.parsed_sections;
+                    
+                    messageHtml += `
+                        <div class="section-header">
+                            <i class="fas fa-layer-group"></i>
+                            Individual Model Responses
+                        </div>
+                    `;
+                    
+                    sections.forEach((section, index) => {
+                        const modelIcon = getModelIcon(section.model_type);
+                        const modelName = section.model_type.charAt(0).toUpperCase() + section.model_type.slice(1);
+                        
+                        messageHtml += `
+                            <div class="individual-model-response" style="animation-delay: ${index * 0.1}s;">
+                                <div class="model-response-header">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="model-type-icon">${modelIcon}</div>
+                                        <span>${modelName} Model</span>
+                                    </div>
+                                    <div class="model-badge">${section.model_type}</div>
+                                </div>
+                                <div class="model-response-body">
+                                    <div style="font-size: 0.8rem; color: #666; margin-bottom: 8px; font-style: italic;">
+                                        📝 Question: "${section.question}"
+                                    </div>
+                                    <div>${section.answer ? formatCodeBlocks(section.answer) : 'Individual response integrated in combined answer below'}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    // Add separator
+                    messageHtml += `<div class="model-separator"></div>`;
+                    
+                    // Add combined response section
+                    messageHtml += `
+                        <div class="section-header combined">
+                            <i class="fas fa-puzzle-piece"></i>
+                            Model-wise Responses
+                        </div>
+                    `;
+                    
+                    // Try to parse individual model responses from the combined content
+                    const combinedResponses = parseModelResponses(formattedContent, sections.map(s => s.model_type));
+                    
+                    if (Object.keys(combinedResponses).length > 0) {
+                        // Display parsed individual responses
+                        sections.forEach((section, index) => {
+                            const modelIcon = getModelIcon(section.model_type);
+                            const modelName = section.model_type.charAt(0).toUpperCase() + section.model_type.slice(1);
+                            const modelResponse = combinedResponses[section.model_type] || section.answer;
+                            
+                            if (index > 0) {
+                                messageHtml += `<div class="model-wise-separator"></div>`;
+                            }
+                            
+                            messageHtml += `
+                                <div class="individual-model-response combined-response" style="animation-delay: ${(sections.length + index) * 0.1}s;">
+                                    <div class="model-response-header">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <div class="model-type-icon">${modelIcon}</div>
+                                            <span>${modelName} Response</span>
+                                        </div>
+                                        <div class="model-badge">${section.model_type}</div>
+                                    </div>
+                                    <div class="model-response-body">
+                                        <div style="font-size: 0.8rem; color: #666; margin-bottom: 8px; font-style: italic;">
+                                            📝 Question: "${section.question}"
+                                        </div>
+                                        <div>${modelResponse ? formatCodeBlocks(modelResponse) : 'Response processing...'}</div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        // Fallback: display the full combined response
+                        messageHtml += `
+                            <div class="individual-model-response combined-response">
+                                <div class="model-response-header">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="model-type-icon">🔮</div>
+                                        <span>Integrated Response</span>
+                                    </div>
+                                    <div class="model-badge">All Models</div>
+                                </div>
+                                <div class="model-response-body">
+                                    ${formattedContent}
+                                </div>
+                            </div>
+                        `;
+                    }
+                } else if (data.prompt_type === 'auto-multi-fallback' && data.multi_results) {
+                    // For auto-fallback multi-model, show the models used
+                    messageHtml += `
+                        <div class="section-header">
+                            <i class="fas fa-shield-alt"></i>
+                            Auto-Fallback Models Used
+                        </div>
+                    `;
+                    
+                    const results = data.multi_results;
+                    const successfulResults = results.filter(r => r.success);
+                    
+                    results.forEach((result, index) => {
+                        const modelIcon = getModelIcon(result.model_type);
+                        const modelName = result.model_type.charAt(0).toUpperCase() + result.model_type.slice(1);
+                        
+                        messageHtml += `
+                            <div class="individual-model-response" style="animation-delay: ${index * 0.1}s;">
+                                <div class="model-response-header">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="model-type-icon">${modelIcon}</div>
+                                        <span>${modelName} Model</span>
+                                    </div>
+                                    <div class="model-badge">${result.success ? 'success' : 'error'}</div>
+                                </div>
+                                <div class="model-response-body">
+                                    ${result.success ? 
+                                        `<div>${formatCodeBlocks(result.answer)}</div>` : 
+                                        `<div style="color: #dc3545; font-weight: 500;">❌ ${result.error}</div>`
+                                    }
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    // Add separator
+                    messageHtml += `<div class="model-separator"></div>`;
+                    
+                    messageHtml += `
+                        <div class="section-header combined">
+                            <i class="fas fa-puzzle-piece"></i>
+                            Comprehensive Fallback Response
+                        </div>
+                    `;
+                    
+                    // Display the combined response as a single integrated response
+                    messageHtml += `
+                        <div class="individual-model-response combined-response">
+                            <div class="model-response-header">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div class="model-type-icon">🔮</div>
+                                    <span>Combined AI Response</span>
+                                </div>
+                                <div class="model-badge">${successfulResults.length}/${results.length} models</div>
+                            </div>
+                            <div class="model-response-body">
+                                ${formattedContent}
+                            </div>
+                        </div>
+                    `;
+                } else if (data.isDesktopMultiModel && data.selectedModels) {
+                    // For manual multi-model, show the models used
+                    messageHtml += `
+                        <div class="section-header">
+                            <i class="fas fa-users"></i>
+                            Selected Models Contributing
+                        </div>
+                    `;
+                    
+                    // Try to parse individual responses from the combined content
+                    const individualResponses = parseIndividualResponses(formattedContent, data.selectedModels);
+                    const hasIndividualResponses = Object.keys(individualResponses).length > 0;
+                    
+                    data.selectedModels.forEach((modelType, index) => {
+                        const modelIcon = getModelIcon(modelType);
+                        const modelName = modelType.charAt(0).toUpperCase() + modelType.slice(1);
+                        const individualResponse = individualResponses[modelType];
+                        
+                        messageHtml += `
+                            <div class="individual-model-response" style="animation-delay: ${index * 0.1}s;">
+                                <div class="model-response-header">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="model-type-icon">${modelIcon}</div>
+                                        <span>${modelName} Model</span>
+                                    </div>
+                                    <div class="model-badge">${modelType}</div>
+                                </div>
+                                <div class="model-response-body">
+                                    ${individualResponse ? 
+                                        `<div>${formatCodeBlocks(individualResponse)}</div>` : 
+                                        '<div style="color: #28a745; font-weight: 500;">✅ This model contributed to the integrated response below</div>'
+                                    }
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    // Add separator
+                    messageHtml += `<div class="model-separator"></div>`;
+                    
+                    messageHtml += `
+                        <div class="section-header combined">
+                            <i class="fas fa-puzzle-piece"></i>
+                            ${hasIndividualResponses ? 'Model-wise Responses' : 'Integrated Response'}
+                        </div>
+                    `;
+                    
+                    if (hasIndividualResponses) {
+                        // Display individual model responses separately
+                        data.selectedModels.forEach((modelType, index) => {
+                            const modelIcon = getModelIcon(modelType);
+                            const modelName = modelType.charAt(0).toUpperCase() + modelType.slice(1);
+                            const modelResponse = individualResponses[modelType];
+                            
+                            if (index > 0) {
+                                messageHtml += `<div class="model-wise-separator"></div>`;
+                            }
+                            
+                            messageHtml += `
+                                <div class="individual-model-response combined-response" style="animation-delay: ${(data.selectedModels.length + index) * 0.1}s;">
+                                    <div class="model-response-header">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <div class="model-type-icon">${modelIcon}</div>
+                                            <span>${modelName} Response</span>
+                                        </div>
+                                        <div class="model-badge">${modelType}</div>
+                                    </div>
+                                    <div class="model-response-body">
+                                        <div>${formatCodeBlocks(modelResponse)}</div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        // Fallback: try to split the combined content by likely patterns
+                        const splitResponses = splitCombinedResponse(formattedContent, data.selectedModels);
+                        
+                        if (splitResponses.length > 1) {
+                            splitResponses.forEach((response, index) => {
+                                const modelType = data.selectedModels[index] || `model${index + 1}`;
+                                const modelIcon = getModelIcon(modelType);
+                                const modelName = modelType.charAt(0).toUpperCase() + modelType.slice(1);
+                                
+                                if (index > 0) {
+                                    messageHtml += `<div class="model-wise-separator"></div>`;
+                                }
+                                
+                                messageHtml += `
+                                    <div class="individual-model-response combined-response" style="animation-delay: ${index * 0.1}s;">
+                                        <div class="model-response-header">
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <div class="model-type-icon">${modelIcon}</div>
+                                                <span>${modelName} Response</span>
+                                            </div>
+                                            <div class="model-badge">${modelType}</div>
+                                        </div>
+                                        <div class="model-response-body">
+                                            <div>${formatCodeBlocks(response.trim())}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                        } else {
+                            // Show single integrated response
+                            messageHtml += `
+                                <div class="individual-model-response combined-response">
+                                    <div class="model-response-header">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <div class="model-type-icon">🔮</div>
+                                            <span>Integrated Response</span>
+                                        </div>
+                                        <div class="model-badge">All Models</div>
+                                    </div>
+                                    <div class="model-response-body">
+                                        ${formattedContent}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                }
+            } else {
+                // Regular single-model response
+                messageHtml += formattedContent;
+            }
+
+            messageHtml += '</div>';
+            
+            if (data) {
+                let infoHtml = '';
+                
+                // Handle auto-parsed multi-model responses
+                if (data.prompt_type === 'auto-parsed-multi' && data.parsed_sections) {
+                    infoHtml += `<div class="message-info" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
+                        <div style="margin-bottom: 8px; font-weight: bold; font-size: 1.1rem;">
+                            <i class="fas fa-magic"></i> Auto-Parsed Multi-Model Response
+                        </div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">
+                            Detected ${data.parsed_sections.length} targeted sections: ${data.parsed_sections.map(s => s.model_type).join(', ')}
+                        </div>
+                        <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 5px;">
+                            Each section was processed by its specialized model
+                        </div>
+                    </div>`;
+                }
+                // Handle auto-fallback multi-model responses
+                else if (data.prompt_type === 'auto-multi-fallback' && data.auto_fallback_triggered) {
+                    infoHtml += `<div class="message-info" style="background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%); color: white; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
+                        <div style="margin-bottom: 8px; font-weight: bold; font-size: 1.1rem;">
+                            <i class="fas fa-shield-alt"></i> Auto-Fallback Multi-Model Response
+                        </div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">
+                            ${data.fallback_reason} - used ${data.used_models.length} AI models for comprehensive coverage
+                        </div>
+                        <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 5px;">
+                            Successfully processed by ${data.successful_models}/${data.used_models.length} models
+                        </div>
+                    </div>`;
+                }
+                // Handle desktop multi-model responses specially
+                else if (data.isDesktopMultiModel && data.selectedModels) {
+                    infoHtml += `<div class="message-info" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
+                        <div style="margin-bottom: 8px; font-weight: bold; font-size: 1.1rem;">
+                            <i class="fas fa-brain"></i> Multi-Model Response
+                        </div>
+                        <div style="font-size: 0.9rem; opacity: 0.9;">
+                            ${data.selectedModels.length} AI models collaborated: ${data.selectedModels.join(', ')}
+                        </div>
+                    </div>`;
+                } else if (data.prompt_type && !data.prompt_type.includes('multi')) {
+                    infoHtml += `<div class="message-info">
+                        <i class="fas fa-robot"></i> Model: ${data.prompt_type}
+                        ${data.model_config ? ` (${data.model_config.model})` : ''}
+                        ${data.source_type ? ` | Source: ${data.source_type}` : ''}
+                    </div>`;
+                }
+                
+                if (data.sources && data.sources.length > 0) {
+                    infoHtml += '<div class="sources"><strong>📚 Sources for Validation:</strong><br>';
+                    data.sources.forEach((source, index) => {
+                        const sourceId = `source-${Date.now()}-${index}`;
+                        const sourceTitle = source.topic || source.source_file || 'Unknown';
+                        const modelType = source.model_type ? ` [${source.model_type}]` : '';
+                        
+                        infoHtml += `
+                            <div class="source-detail">
+                                <div class="source-header" onclick="toggleSource('${sourceId}')">
+                                    <div>
+                                        <strong>${sourceTitle}${modelType}</strong>
+                                        ${source.page !== 'Unknown' ? `(Page ${source.page})` : ''}
+                                        <div class="source-meta">
+                                            File: ${source.source_file || source.source} 
+                                            ${source.chunk_id !== 'Unknown' ? `| Chunk: ${source.chunk_id}` : ''}
+                                        </div>
+                                    </div>
+                                    <i class="fas fa-chevron-right expand-icon" id="icon-${sourceId}"></i>
+                                </div>
+                                <div class="source-content" id="${sourceId}">
+                                    ${source.full_content || source.content_preview}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    infoHtml += '</div>';
+                }
+                
+                messageHtml += infoHtml;
+            }
+            
+            messageDiv.innerHTML = messageHtml;
+            messages.appendChild(messageDiv);
+            
+            // Trigger syntax highlighting for code blocks
+            if (typeof Prism !== 'undefined' && sender === 'assistant') {
+                setTimeout(() => {
+                    Prism.highlightAllUnder(messageDiv);
+                }, 10);
+            }
+            
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function toggleSource(sourceId) {
+            const content = document.getElementById(sourceId);
+            const icon = document.getElementById(`icon-${sourceId}`);
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                icon.classList.remove('rotated');
+            } else {
+                content.classList.add('expanded');
+                icon.classList.add('rotated');
+            }
+        }
+
+        async function clearHistory() {
+            try {
+                await fetch('/api/clear-history', { method: 'POST' });
+                document.getElementById('messages').innerHTML = `
+                    <div class="message assistant">
+                        <div class="message-content">
+                            History cleared! 🧹 How can I help you today?
+                        </div>
+                    </div>
+                `;
+                questionCount = 0;
+                documentCount = 0;
+                document.getElementById('questionCount').textContent = '0';
+                document.getElementById('documentCount').textContent = '0';
+            } catch (error) {
+                console.error('Failed to clear history:', error);
+            }
+        }
+
+        // Check system status with detailed information
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/system-status');
+                const data = await response.json();
+                
+                // Update system status
+                const statusElement = document.getElementById('systemStatus');
+                if (data.rag_initialized && data.models_available > 0) {
+                    statusElement.textContent = `Ready (${data.models_available} models)`;
+                    statusElement.style.color = '#28a745';
+                } else if (data.rag_initialized && data.models_available === 0) {
+                    statusElement.textContent = 'No Models Available';
+                    statusElement.style.color = '#dc3545';
+                } else {
+                    statusElement.textContent = 'Initializing...';
+                    statusElement.style.color = '#ffc107';
+                }
+                
+                // Update document count if available
+                if (data.documents_loaded !== undefined) {
+                    document.getElementById('documentCount').textContent = data.documents_loaded;
+                }
+                
+                // Show model status in console for debugging
+                console.log('System Status:', {
+                    models: data.working_models?.length || 0,
+                    ollama: data.ollama_connection,
+                    documents: data.documents_loaded,
+                    customTypes: data.custom_types
+                });
+                
+            } catch (error) {
+                document.getElementById('systemStatus').textContent = 'Connection Error';
+                document.getElementById('systemStatus').style.color = '#dc3545';
+                console.error('Status check failed:', error);
+            }
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            loadModels();
+            checkStatus();
+            loadDocumentInfo();
+            document.getElementById('questionInput').focus();
+        });
+
+        // File upload functionality
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        }
+
+        async function handleFiles(files) {
+            if (!files.length) return;
+
+            const uploadArea = document.querySelector('.upload-area');
+            const statusDiv = document.getElementById('uploadStatus');
+            
+            uploadArea.classList.add('uploading');
+            statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading files...';
+
+            const formData = new FormData();
+            for (let file of files) {
+                formData.append('files', file);
+            }
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    statusDiv.innerHTML = `<div class="upload-success">
+                        <i class="fas fa-check-circle"></i> Successfully processed ${data.total_chunks} document chunks
+                    </div>`;
+                    
+                    // Show file details
+                    if (data.files && data.files.length > 0) {
+                        const fileList = data.files.map(file => 
+                            `<div>${file.filename} (${file.chunks} chunks) - ${file.status}</div>`
+                        ).join('');
+                        statusDiv.innerHTML += `<div style="margin-top: 10px; font-size: 0.7rem;">${fileList}</div>`;
+                    }
+
+                    // Refresh document info
+                    loadDocumentInfo();
+                } else {
+                    statusDiv.innerHTML = `<div class="upload-error">
+                        <i class="fas fa-exclamation-circle"></i> Error: ${data.error}
+                    </div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="upload-error">
+                    <i class="fas fa-exclamation-circle"></i> Upload failed: ${error.message}
+                </div>`;
+            } finally {
+                uploadArea.classList.remove('uploading');
+                
+                // Clear status after 5 seconds
+                setTimeout(() => {
+                    statusDiv.innerHTML = '';
+                }, 5000);
+            }
+        }
+
+        async function loadDocumentInfo() {
+            try {
+                const response = await fetch('/api/documents');
+                const data = await response.json();
+                
+                const docStats = document.getElementById('docStats');
+                
+                if (data.total > 0) {
+                    docStats.innerHTML = `
+                        <div class="doc-count">Total Documents: ${data.total}</div>
+                        <div class="doc-count">Sources: ${data.source_count}</div>
+                        <div style="margin-top: 10px; font-size: 0.7rem;">
+                            Sources: ${data.sources.join(', ')}
+                        </div>
+                    `;
+                } else {
+                    docStats.innerHTML = `
+                        <div class="doc-count">No documents loaded</div>
+                        <div style="margin-top: 5px; font-size: 0.7rem;">Upload documents to get started</div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('docStats').innerHTML = '<div class="doc-count">Error loading document info</div>';
+            }
+        }
+
+        // Periodic status check
+        setInterval(checkStatus, 30000);
+
+        // Custom Types Management
+        let availableModels = [];
+        
+        async function loadCustomTypes() {
+            try {
+                const response = await fetch('/api/prompt-types');
+                const customTypes = await response.json();
+                
+                const customTypesList = document.getElementById('customTypesList');
+                
+                if (customTypes.length === 0) {
+                    customTypesList.innerHTML = '<div style="color: #6c757d; font-style: italic;">No custom types defined yet</div>';
+                } else {
+                    customTypesList.innerHTML = customTypes.map(type => `
+                        <div class="custom-type-item">
+                            <div class="custom-type-info">
+                                <div class="custom-type-name">${type.name}</div>
+                                <div class="custom-type-meta">
+                                    Model: ${type.model} | Temp: ${type.temperature} | Keywords: ${type.keywords.join(', ')}
+                                </div>
+                                <div class="custom-type-description">
+                                    ${type.description}
+                                </div>
+                            </div>
+                            <div class="custom-type-actions">
+                                <button class="modify-type-btn" onclick="showModifyTypeModal('${type.name}')" title="Modify Type">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="delete-type-btn" onclick="deleteCustomType('${type.name}')" title="Delete Type">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                document.getElementById('customTypesList').innerHTML = 
+                    '<div style="color: #dc3545;">Error loading custom types</div>';
+            }
+        }
+
+        async function loadAvailableModels() {
+            try {
+                const response = await fetch('/api/ollama-models');
+                availableModels = await response.json();
+                
+                const modelSelect = document.getElementById('typeModel');
+                modelSelect.innerHTML = '<option value="">Select a model...</option>' +
+                    availableModels.map(model => `<option value="${model}">${model}</option>`).join('');
+            } catch (error) {
+                document.getElementById('typeModel').innerHTML = 
+                    '<option value="">Error loading models</option>';
+            }
+        }
+
+        function showAddTypeModal() {
+            document.getElementById('addTypeModal').style.display = 'block';
+            // Initialize temperature slider
+            setupTemperatureSlider();
+            // Focus on first input
+            setTimeout(() => {
+                document.getElementById('typeName').focus();
+            }, 100);
+        }
+
+        function closeAddTypeModal() {
+            document.getElementById('addTypeModal').style.display = 'none';
+            document.getElementById('addTypeForm').reset();
+            // Reset temperature display
+            document.getElementById('temperatureValue').textContent = '0.2';
+        }
+
+        function selectModel(modelName) {
+            document.getElementById('typeModel').value = modelName;
+            
+            // Auto-suggest temperature and keywords based on model
+            const tempSlider = document.getElementById('typeTemperature');
+            const tempValue = document.getElementById('temperatureValue');
+            const keywordsField = document.getElementById('typeKeywords');
+            const descField = document.getElementById('typeDescription');
+            
+            let suggestedTemp = 0.2;
+            let suggestedKeywords = '';
+            let suggestedDesc = '';
+            
+            if (modelName.includes('code') || modelName.includes('coder')) {
+                suggestedTemp = 0.0;
+                suggestedKeywords = 'code, programming, development, function, debug';
+                suggestedDesc = `Code generation and programming tasks using ${modelName}`;
+            } else if (modelName.includes('qwen')) {
+                suggestedTemp = 0.1;
+                suggestedKeywords = 'analysis, reasoning, logic, complex, think';
+                suggestedDesc = `Reasoning and analytical tasks using ${modelName}`;
+            } else if (modelName.includes('1b') || modelName.includes('3b')) {
+                suggestedTemp = 0.3;
+                suggestedKeywords = 'quick, fast, simple, brief, chat';
+                suggestedDesc = `Fast responses and quick questions using ${modelName}`;
+            } else if (modelName.includes('mistral')) {
+                suggestedTemp = 0.2;
+                suggestedKeywords = 'general, conversation, question, help';
+                suggestedDesc = `General purpose questions using ${modelName}`;
+            } else {
+                suggestedTemp = 0.2;
+                suggestedKeywords = 'general, custom, specialized';
+                suggestedDesc = `Custom tasks using ${modelName} model`;
+            }
+            
+            // Update temperature
+            tempSlider.value = suggestedTemp;
+            tempValue.textContent = suggestedTemp.toFixed(1);
+            
+            // Suggest keywords and description (only if fields are empty)
+            if (!keywordsField.value.trim()) {
+                keywordsField.value = suggestedKeywords;
+            }
+            if (!descField.value.trim()) {
+                descField.value = suggestedDesc;
+            }
+        }
+
+        function setupTemperatureSlider() {
+            const tempSlider = document.getElementById('typeTemperature');
+            const tempValue = document.getElementById('temperatureValue');
+            
+            tempSlider.addEventListener('input', function() {
+                tempValue.textContent = parseFloat(this.value).toFixed(1);
+            });
+        }
+
+        async function deleteCustomType(typeName) {
+            if (!confirm(`Are you sure you want to delete the custom type "${typeName}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/prompt-types', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: typeName })
+                });
+
+                if (response.ok) {
+                    loadCustomTypes(); // Reload the list
+                } else {
+                    alert('Failed to delete custom type');
+                }
+            } catch (error) {
+                alert('Error deleting custom type: ' + error.message);
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('addTypeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const typeName = document.getElementById('typeName').value.trim().toLowerCase();
+            const keywords = document.getElementById('typeKeywords').value.split(',').map(k => k.trim()).filter(k => k);
+            const model = document.getElementById('typeModel').value.trim();
+            const description = document.getElementById('typeDescription').value.trim();
+            const temperature = parseFloat(document.getElementById('typeTemperature').value);
+
+            // Validation
+            if (!typeName || !model || !description || keywords.length === 0) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            if (temperature < 0 || temperature > 1) {
+                alert('Temperature must be between 0 and 1');
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = document.querySelector('.btn-submit');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/prompt-types', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: typeName,
+                        keywords: keywords,
+                        model: model,
+                        temperature: temperature,
+                        description: description
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    closeAddTypeModal();
+                    loadCustomTypes(); // Reload the list
+                    
+                    // Show success message
+                    if (result.model_pulled) {
+                        alert(`✅ Success! Custom type "${typeName}" added successfully.\n🔄 Model "${model}" was automatically downloaded.`);
+                    } else {
+                        alert(`✅ Success! Custom type "${typeName}" added successfully.`);
+                    }
+                } else {
+                    const error = await response.json();
+                    alert('❌ Failed to add custom type: ' + (error.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Network error: ' + error.message);
+            } finally {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        // New functions for modify and map functionality
+        function showModifyTypeModal(typeName) {
+            // Load current type data and populate modify form
+            fetch('/api/prompt-types')
+                .then(response => response.json())
+                .then(data => {
+                    const customType = data.custom_types.find(type => type.name === typeName);
+                    if (customType) {
+                        // Create modify modal content dynamically
+                        const modalContent = `
+                            <div class="modal-content">
+                                <span class="close" onclick="closeModifyTypeModal()">&times;</span>
+                                <h2><i class="fas fa-edit"></i> Modify Custom Type: ${typeName}</h2>
+                                <form id="modifyTypeForm">
+                                    <div class="form-group">
+                                        <label for="modifyModel">Model Name:</label>
+                                        <input type="text" id="modifyModel" value="${customType.model}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="modifyTemperature">Temperature (0-1):</label>
+                                        <input type="number" id="modifyTemperature" min="0" max="1" step="0.1" value="${customType.temperature}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="modifyDescription">Description:</label>
+                                        <textarea id="modifyDescription" required>${customType.description}</textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="modifyKeywords">Keywords (comma-separated):</label>
+                                        <input type="text" id="modifyKeywords" value="${customType.keywords.join(', ')}" required>
+                                    </div>
+                                    <button type="submit">Update Type</button>
+                                </form>
+                            </div>
+                        `;
+                        
+                        // Create or update modify modal
+                        let modal = document.getElementById('modifyTypeModal');
+                        if (!modal) {
+                            modal = document.createElement('div');
+                            modal.id = 'modifyTypeModal';
+                            modal.className = 'modal';
+                            document.body.appendChild(modal);
+                        }
+                        modal.innerHTML = modalContent;
+                        modal.style.display = 'block';
+                        
+                        // Add form submit handler
+                        document.getElementById('modifyTypeForm').addEventListener('submit', async (e) => {
+                            e.preventDefault();
+                            const model = document.getElementById('modifyModel').value;
+                            const temperature = parseFloat(document.getElementById('modifyTemperature').value);
+                            const description = document.getElementById('modifyDescription').value;
+                            const keywords = document.getElementById('modifyKeywords').value.split(',').map(k => k.trim());
+                            
+                            try {
+                                const response = await fetch(`/api/prompt-types/${typeName}`, {
+                                    method: 'PUT',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({
+                                        model: model,
+                                        temperature: temperature,
+                                        description: description,
+                                        keywords: keywords
+                                    })
+                                });
+                                
+                                if (response.ok) {
+                                    closeModifyTypeModal();
+                                    loadCustomTypes();
+                                    alert('Type updated successfully!');
+                                } else {
+                                    const error = await response.json();
+                                    alert('Failed to update type: ' + error.error);
+                                }
+                            } catch (error) {
+                                alert('Error updating type: ' + error.message);
+                            }
+                        });
+                    }
+                });
+        }
+        
+        function closeModifyTypeModal() {
+            const modal = document.getElementById('modifyTypeModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        function showMapModelModal() {
+            // Load available models first
+            fetch('/api/available-models')
+                .then(response => response.json())
+                .then(data => {
+                    const modelsOptions = data.models.map(model => 
+                        `<option value="${model.name}" ${model.is_mapped ? 'data-mapped="true"' : ''}>${model.name} ${model.is_mapped ? '(Mapped)' : '(Available)'}</option>`
+                    ).join('');
+                    
+                    const modalContent = `
+                        <div class="modal-content">
+                            <span class="close" onclick="closeMapModelModal()">&times;</span>
+                            <h2><i class="fas fa-link"></i> Map Model to New Type</h2>
+                            <form id="mapModelForm">
+                                <div class="form-group">
+                                    <label for="mapModelSelect">Available Model:</label>
+                                    <select id="mapModelSelect" required>
+                                        <option value="">Select a model...</option>
+                                        ${modelsOptions}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="mapTypeName">New Type Name:</label>
+                                    <input type="text" id="mapTypeName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="mapTemperature">Temperature (0-1):</label>
+                                    <input type="number" id="mapTemperature" min="0" max="1" step="0.1" value="0.2" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="mapDescription">Description:</label>
+                                    <textarea id="mapDescription" placeholder="Description for this custom type"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="mapKeywords">Keywords (comma-separated):</label>
+                                    <input type="text" id="mapKeywords" placeholder="keyword1, keyword2, keyword3" required>
+                                </div>
+                                <button type="submit">Create Mapping</button>
+                            </form>
+                        </div>
+                    `;
+                    
+                    // Create or update map modal
+                    let modal = document.getElementById('mapModelModal');
+                    if (!modal) {
+                        modal = document.createElement('div');
+                        modal.id = 'mapModelModal';
+                        modal.className = 'modal';
+                        document.body.appendChild(modal);
+                    }
+                    modal.innerHTML = modalContent;
+                    modal.style.display = 'block';
+                    
+                    // Auto-fill smart defaults based on model selection
+                    document.getElementById('mapModelSelect').addEventListener('change', function() {
+                        const selectedModel = this.value;
+                        const typeNameField = document.getElementById('mapTypeName');
+                        const descriptionField = document.getElementById('mapDescription');
+                        const keywordsField = document.getElementById('mapKeywords');
+                        const temperatureField = document.getElementById('mapTemperature');
+                        
+                        if (selectedModel) {
+                            // Auto-fill type name
+                            const baseName = selectedModel.split(':')[0].replace(/[^a-zA-Z0-9]/g, '');
+                            typeNameField.value = baseName + '_custom';
+                            
+                            // Auto-fill description and set temperature based on model type
+                            if (selectedModel.includes('code')) {
+                                descriptionField.value = `Code generation using ${selectedModel}`;
+                                keywordsField.value = 'code, programming, development, function';
+                                temperatureField.value = '0.0';
+                            } else if (selectedModel.includes('qwen')) {
+                                descriptionField.value = `Reasoning and analysis using ${selectedModel}`;
+                                keywordsField.value = 'analysis, reasoning, logic, complex';
+                                temperatureField.value = '0.1';
+                            } else if (selectedModel.includes('1b') || selectedModel.includes('3b')) {
+                                descriptionField.value = `Fast responses using ${selectedModel}`;
+                                keywordsField.value = 'quick, fast, simple, brief';
+                                temperatureField.value = '0.3';
+                            } else {
+                                descriptionField.value = `Custom type using ${selectedModel}`;
+                                keywordsField.value = baseName + ', general, custom';
+                                temperatureField.value = '0.2';
+                            }
+                        }
+                    });
+                    
+                    // Add form submit handler
+                    document.getElementById('mapModelForm').addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const model = document.getElementById('mapModelSelect').value;
+                        const typeName = document.getElementById('mapTypeName').value;
+                        const temperature = parseFloat(document.getElementById('mapTemperature').value);
+                        const description = document.getElementById('mapDescription').value;
+                        const keywords = document.getElementById('mapKeywords').value.split(',').map(k => k.trim());
+                        
+                        try {
+                            const response = await fetch('/api/map-model', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    model: model,
+                                    type_name: typeName,
+                                    temperature: temperature,
+                                    description: description,
+                                    keywords: keywords
+                                })
+                            });
+                            
+                            if (response.ok) {
+                                closeMapModelModal();
+                                loadCustomTypes();
+                                alert('Model mapped to type successfully!');
+                            } else {
+                                const error = await response.json();
+                                alert('Failed to map model: ' + error.error);
+                            }
+                        } catch (error) {
+                            alert('Error mapping model: ' + error.message);
+                        }
+                    });
+                })
+                .catch(error => {
+                    alert('Error loading available models: ' + error.message);
+                });
+        }
+        
+        function closeMapModelModal() {
+            const modal = document.getElementById('mapModelModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        function showAvailableModelsModal() {
+            fetch('/api/available-models')
+                .then(response => response.json())
+                .then(data => {
+                    const modelsInfo = data.models.map(model => `
+                        <div class="model-info-item">
+                            <div class="model-name">${model.name}</div>
+                            <div class="model-status ${model.is_mapped ? 'mapped' : 'unmapped'}">
+                                ${model.is_mapped ? '✅ Mapped' : '⚪ Available'}
+                            </div>
+                            ${model.mapped_types.length > 0 ? 
+                                `<div class="model-mappings">
+                                    ${model.mapped_types.map(type => `<span class="mapping-tag">${type.name} (${type.type})</span>`).join('')}
+                                </div>` : ''}
+                        </div>
+                    `).join('');
+                    
+                    const modalContent = `
+                        <div class="modal-content">
+                            <span class="close" onclick="closeAvailableModelsModal()">&times;</span>
+                            <h2><i class="fas fa-list"></i> Available Ollama Models</h2>
+                            <div class="models-stats">
+                                <div class="stat">Total: ${data.total_models}</div>
+                                <div class="stat">Mapped: ${data.mapped_count}</div>
+                                <div class="stat">Available: ${data.unmapped_count}</div>
+                            </div>
+                            <div class="models-list">
+                                ${modelsInfo}
+                            </div>
+                            <style>
+                                .models-stats {
+                                    display: flex;
+                                    gap: 20px;
+                                    margin-bottom: 20px;
+                                    padding: 10px;
+                                    background: #f8f9fa;
+                                    border-radius: 5px;
+                                }
+                                .stat {
+                                    font-weight: bold;
+                                    color: #495057;
+                                }
+                                .models-list {
+                                    max-height: 400px;
+                                    overflow-y: auto;
+                                }
+                                .model-info-item {
+                                    display: flex;
+                                    justify-content: space-between;
+                                    align-items: center;
+                                    padding: 10px;
+                                    border-bottom: 1px solid #eee;
+                                    gap: 10px;
+                                }
+                                .model-name {
+                                    font-weight: bold;
+                                    flex: 1;
+                                }
+                                .model-status.mapped {
+                                    color: #28a745;
+                                }
+                                .model-status.unmapped {
+                                    color: #6c757d;
+                                }
+                                .model-mappings {
+                                    display: flex;
+                                    gap: 5px;
+                                    flex-wrap: wrap;
+                                }
+                                .mapping-tag {
+                                    background: #007bff;
+                                    color: white;
+                                    padding: 2px 6px;
+                                    border-radius: 3px;
+                                    font-size: 0.7rem;
+                                }
+                            </style>
+                        </div>
+                    `;
+                    
+                    // Create or update available models modal
+                    let modal = document.getElementById('availableModelsModal');
+                    if (!modal) {
+                        modal = document.createElement('div');
+                        modal.id = 'availableModelsModal';
+                        modal.className = 'modal';
+                        document.body.appendChild(modal);
+                    }
+                    modal.innerHTML = modalContent;
+                    modal.style.display = 'block';
+                })
+                .catch(error => {
+                    alert('Error loading available models: ' + error.message);
+                });
+        }
+        
+        function closeAvailableModelsModal() {
+            const modal = document.getElementById('availableModelsModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('addTypeModal');
+            if (event.target === modal) {
+                closeAddTypeModal();
+            }
+        });
+
+        // Load custom types on page load
+        loadCustomTypes();
+
+        // Multi-model response parsing functions
+        function getModelIcon(modelType) {
+            const icons = {
+                'technical': '🔧',
+                'creative': '🎨',
+                'code': '💻',
+                'general': '🧠',
+                'reasoning': '🤔',
+                'scientific': '🔬',
+                'chat': '💬',
+                'analysis': '📊'
+            };
+            return icons[modelType.toLowerCase()] || '🤖';
+        }
+
+        // Enhanced function to parse model responses from combined content
+        function parseModelResponses(content, modelTypes) {
+            const responses = {};
+            
+            // More comprehensive patterns for different response formats
+            modelTypes.forEach(modelType => {
+                const modelName = modelType.charAt(0).toUpperCase() + modelType.slice(1);
+                const patterns = [
+                    new RegExp(`${modelName}[\\s\\w]*:([\\s\\S]*?)(?=${modelTypes.filter(t => t !== modelType).map(t => t.charAt(0).toUpperCase() + t.slice(1)).join('|')}|$)`, 'i'),
+                    new RegExp(`\\[${modelType}\\][\\s\\S]*?:([\\s\\S]*?)(?=\\[(?:${modelTypes.filter(t => t !== modelType).join('|')})\\]|$)`, 'i'),
+                    new RegExp(`${modelType} (?:model|response)[\\s\\S]*?:([\\s\\S]*?)(?=${modelTypes.filter(t => t !== modelType).map(t => t + ' (?:model|response)').join('|')}|$)`, 'i')
+                ];
+                
+                for (const pattern of patterns) {
+                    const match = content.match(pattern);
+                    if (match) {
+                        responses[modelType] = match[1].trim();
+                        break;
+                    }
+                }
+            });
+            
+            return responses;
+        }
+
+        // Function to parse individual responses from multi-model content
+        function parseIndividualResponses(content, modelTypes) {
+            const responses = {};
+            
+            // Try to split content by model type headers
+            modelTypes.forEach(modelType => {
+                const modelName = modelType.charAt(0).toUpperCase() + modelType.slice(1);
+                const patterns = [
+                    new RegExp(`${modelName}[\\s\\w]*:([\\s\\S]*?)(?=(?:${modelTypes.filter(t => t !== modelType).map(t => t.charAt(0).toUpperCase() + t.slice(1)).join('|')})[\\s\\w]*:|$)`, 'i'),
+                    new RegExp(`\\*\\*${modelName}[\\s\\w]*\\*\\*([\\s\\S]*?)(?=\\*\\*(?:${modelTypes.filter(t => t !== modelType).map(t => t.charAt(0).toUpperCase() + t.slice(1)).join('|')})[\\s\\w]*\\*\\*|$)`, 'i')
+                ];
+                
+                for (const pattern of patterns) {
+                    const match = content.match(pattern);
+                    if (match) {
+                        responses[modelType] = match[1].trim();
+                        break;
+                    }
+                }
+            });
+            
+            return responses;
+        }
+
+        // Function to split combined response by common patterns
+        function splitCombinedResponse(content, modelTypes) {
+            // Try to split by common separators
+            const separators = [
+                /\n\s*[-=]{3,}\s*\n/g,  // Horizontal lines
+                /\n\s*\*{3,}\s*\n/g,    // Asterisk lines
+                /\n\n\s*\d+\.\s*/g,     // Numbered sections
+                /\n\n(?=[A-Z][^.]*:)/g  // New paragraphs starting with "Type:"
+            ];
+            
+            for (const separator of separators) {
+                const parts = content.split(separator).filter(part => part.trim().length > 50);
+                if (parts.length >= modelTypes.length) {
+                    return parts.slice(0, modelTypes.length);
+                }
+            }
+            
+            // Fallback: try to split by paragraph length
+            const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 50);
+            if (paragraphs.length >= modelTypes.length) {
+                return paragraphs.slice(0, modelTypes.length);
+            }
+            
+            // Last resort: return the whole content
+            return [content];
+        }
+    </script>
+
+    <!-- Add Custom Type Modal -->
+    <div id="addTypeModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddTypeModal()">&times;</span>
+            <h2><i class="fas fa-plus-circle"></i> Add Custom Type</h2>
+            <form id="addTypeForm">
+                <div class="form-group">
+                    <label for="typeName">Type Name:</label>
+                    <input type="text" id="typeName" required placeholder="e.g., finance, medical, creative">
+                </div>
+                
+                <div class="form-group">
+                    <label for="typeModel">Ollama Model Name:</label>
+                    <input type="text" id="typeModel" required 
+                           placeholder="e.g., llama3.2:3b, mistral:7b, qwen2.5">
+                    <div class="model-suggestions">
+                        <small>📋 <strong>Popular Models:</strong></small>
+                        <div class="suggestion-tags">
+                            <span class="suggestion-tag" onclick="selectModel('llama3.2:1b')">llama3.2:1b</span>
+                            <span class="suggestion-tag" onclick="selectModel('llama3.2:3b')">llama3.2:3b</span>
+                            <span class="suggestion-tag" onclick="selectModel('mistral:7b')">mistral:7b</span>
+                            <span class="suggestion-tag" onclick="selectModel('qwen2.5:7b')">qwen2.5:7b</span>
+                            <span class="suggestion-tag" onclick="selectModel('codellama')">codellama</span>
+                            <span class="suggestion-tag" onclick="selectModel('gemma2:2b')">gemma2:2b</span>
+                        </div>
+                        <small class="model-help">
+                            💡 <strong>Tips:</strong> Smaller models (1b, 3b) are faster • Larger models (7b+) are more capable<br>
+                            🔗 Browse more models at <a href="https://ollama.com/library" target="_blank">ollama.com/library</a>
+                        </small>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="typeTemperature">Temperature:</label>
+                    <div class="temperature-input">
+                        <input type="range" id="typeTemperature" min="0" max="1" step="0.1" value="0.2">
+                        <span id="temperatureValue">0.2</span>
+                    </div>
+                    <div class="temperature-guide">
+                        <small>0.0 = Focused/Deterministic • 0.2 = Balanced • 0.7 = Creative • 1.0 = Random</small>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="typeKeywords">Keywords (comma-separated):</label>
+                    <input type="text" id="typeKeywords" required 
+                           placeholder="e.g., finance, banking, trading, stocks">
+                    <small class="keywords-help">
+                        💡 These keywords help the system know when to use this model
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="typeDescription">Description:</label>
+                    <textarea id="typeDescription" required
+                              placeholder="Describe when to use this custom type (e.g., For financial analysis and trading questions)"></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeAddTypeModal()">Cancel</button>
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-plus"></i> Add Custom Type
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

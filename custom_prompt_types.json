@@ -1,0 +1,22 @@
+{
+  "compliance": {
+    "model": "llava",
+    "temperature": 0.2,
+    "description": "Custom type using llava",
+    "keywords": [
+      "llava",
+      "general",
+      "custom"
+    ]
+  },
+  "javacode": {
+    "model": "deepseek-r1",
+    "temperature": 0.2,
+    "description": "Custom type using deepseek-r1",
+    "keywords": [
+      "deepseekr1",
+      "general",
+      "custom"
+    ]
+  }
+}
