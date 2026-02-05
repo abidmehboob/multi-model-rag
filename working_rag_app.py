@@ -9,6 +9,7 @@ import numpy as np
 import subprocess
 import paramiko
 import json
+import re
 from typing import List, Dict, Any
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -26,7 +27,7 @@ except ImportError:
 from custom_ollama import CustomOllama
 
 # Configuration
-OLLAMA_MODEL = "gemma2"
+OLLAMA_MODEL = "gemma2:latest"
 OLLAMA_API_URL = "http://20.185.83.16:8080/"
 OLLAMA_API_KEY = "aie93JaTv1GW1AP4IIUSqeecV22HgpcQ6WlgWNyfx2HflkY5hTw19JDbT90ViKcZaZ6lpjOo3YIGgpkG7Zb8jEKvdM5Ymnq9jPm79osLppCebwJ7WdWTwWq3Rf15NDxm"
 DEFAULT_TEMPERATURE = 0.2
@@ -55,7 +56,7 @@ MULTI_MODEL_CONFIG = {
         "description": "Technical and scientific questions"
     },
     "creative": {
-        "model": "gemma2:latest",  # Updated to match server
+        "model": "gemma3:latest",  # Using newer Gemma3 for creative tasks
         "temperature": 0.7,
         "description": "Creative writing and storytelling"
     },
@@ -65,7 +66,7 @@ MULTI_MODEL_CONFIG = {
         "description": "Code generation and programming"
     },
     "analysis": {
-        "model": "llama3.1:latest",  # Updated to match server
+        "model": "phi4-reasoning:latest",  # Using reasoning model for analysis
         "temperature": 0.3,
         "description": "Data analysis and reasoning"
     },

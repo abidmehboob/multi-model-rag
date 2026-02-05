@@ -3,7 +3,7 @@ Configuration file for RAG Application
 """
 
 # Model Configuration
-OLLAMA_MODEL = "gemma2"  # Changed to your preferred Ollama model
+OLLAMA_MODEL = "gemma2:latest"  # Updated to match server model name
 OLLAMA_API_URL = "http://20.185.83.16:8080/"
 OLLAMA_API_KEY = "aie93JaTv1GW1AP4IIUSqeecV22HgpcQ6WlgWNyfx2HflkY5hTw19JDbT90ViKcZaZ6lpjOo3YIGgpkG7Zb8jEKvdM5Ymnq9jPm79osLppCebwJ7WdWTwWq3Rf15NDxm"
 DEFAULT_TEMPERATURE = 0.2

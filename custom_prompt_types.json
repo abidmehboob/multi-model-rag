@@ -18,5 +18,14 @@
       "general",
       "custom"
     ]
+  },
+  "test_type": {
+    "model": "gemma2:latest",
+    "temperature": 0.2,
+    "description": "Test description",
+    "keywords": [
+      "test",
+      "example"
+    ]
   }
 }

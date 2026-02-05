@@ -23,7 +23,7 @@ except ImportError:
 from custom_ollama import CustomOllama
 
 # Configuration
-OLLAMA_MODEL = "gemma2"
+OLLAMA_MODEL = "gemma2:latest"
 OLLAMA_API_URL = "http://20.185.83.16:8080/"
 OLLAMA_API_KEY = "aie93JaTv1GW1AP4IIUSqeecV22HgpcQ6WlgWNyfx2HflkY5hTw19JDbT90ViKcZaZ6lpjOo3YIGgpkG7Zb8jEKvdM5Ymnq9jPm79osLppCebwJ7WdWTwWq3Rf15NDxm"
 DEFAULT_TEMPERATURE = 0.2
@@ -34,38 +34,50 @@ VECTORSTORE_PATH = "simple_vectorstore.pkl"
 # Multi-model configuration
 MULTI_MODEL_CONFIG = {
     "default": {
-        "model": "gemma2",
+        "model": "gemma2:latest",
         "temperature": 0.2,
         "description": "General purpose AI assistant"
     },
     "technical": {
-        "model": "gemma2",  # Could be different model if available
+        "model": "llama3.1:latest",  # Using LLaMA for technical tasks
         "temperature": 0.1,
         "description": "Technical and scientific questions"
     },
     "creative": {
-        "model": "gemma2",  # Could be different model if available
+        "model": "gemma3:latest",  # Using newer Gemma3 for creative tasks
         "temperature": 0.7,
         "description": "Creative writing and storytelling"
     },
     "code": {
-        "model": "gemma2",  # Could be different model if available
+        "model": "codellama:latest",  # Using CodeLLaMA for programming
         "temperature": 0.0,
         "description": "Code generation and programming"
     },
     "analysis": {
-        "model": "gemma2",  # Could be different model if available
+        "model": "qwen3:14b",  # Using Qwen3 for advanced analysis
         "temperature": 0.3,
         "description": "Data analysis and reasoning"
+    },
+    "reasoning": {
+        "model": "phi4-reasoning:latest",  # Specialized reasoning model
+        "temperature": 0.2,
+        "description": "Complex reasoning and problem solving"
+    },
+    "chat": {
+        "model": "gemma3:1b",  # Lightweight model for quick chat
+        "temperature": 0.4,
+        "description": "Quick conversational responses"
     }
 }
 
 # Prompt type detection keywords
 PROMPT_TYPE_KEYWORDS = {
-    "technical": ["algorithm", "science", "research", "technical", "engineering", "mathematics", "physics", "chemistry", "biology"],
-    "creative": ["story", "creative", "write", "poem", "narrative", "fiction", "imagine", "create", "artistic"],
-    "code": ["code", "programming", "python", "javascript", "function", "class", "method", "variable", "debug", "syntax"],
-    "analysis": ["analyze", "compare", "evaluate", "assess", "review", "examine", "study", "investigate", "data"]
+    "technical": ["algorithm", "science", "research", "technical", "engineering", "mathematics", "physics", "chemistry", "biology", "architecture", "system", "design"],
+    "creative": ["story", "creative", "write", "poem", "narrative", "fiction", "imagine", "create", "artistic", "brainstorm", "novel", "character"],
+    "code": ["code", "programming", "python", "javascript", "function", "class", "method", "variable", "debug", "syntax", "api", "framework", "library"],
+    "analysis": ["analyze", "compare", "evaluate", "assess", "review", "examine", "study", "investigate", "data", "statistics", "trends", "insights"],
+    "reasoning": ["reason", "logic", "problem", "solve", "think", "deduce", "infer", "conclude", "theorem", "proof", "complex", "puzzle"],
+    "chat": ["hello", "hi", "how are you", "what's up", "chat", "talk", "conversation", "casual", "quick question", "simple"]
 }
 
 class SimpleDocument:
